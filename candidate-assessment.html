@@ -152,6 +152,10 @@
         linear-gradient(180deg, #d6ecd8 0%, #edf5d6 100%);
     }
     body[data-mode="candidate"][data-gate="intro"] .layout,
+    body[data-mode="candidate"][data-gate="intro"] .topbar,
+    body[data-mode="candidate"][data-gate="intro"] .side,
+    body[data-mode="candidate"][data-gate="intro"] .toolbar,
+    body[data-mode="candidate"][data-gate="intro"] .nav,
     body[data-mode="candidate"][data-gate="intro"] .floating-tabs {
       display: none !important;
     }
@@ -1181,7 +1185,7 @@
     }
   </style>
 </head>
-<body>
+<body data-mode="candidate" data-gate="intro" data-view="answer">
   <main class="app">
     <section class="candidate-intro" id="candidateIntro">
       <div class="intro-card">
