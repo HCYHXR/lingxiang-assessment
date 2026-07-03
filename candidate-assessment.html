@@ -2920,11 +2920,13 @@
     const answerGuide = { name: "灵狐", src: "talent_tool_assets/spirit_fox_fast.webp" };
 
     const SYNC_API = `${location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787"}/api/submissions`;
+    const DRAFT_KEY = "talentAssessmentDraft";
     const candidateMode = true;
     if (candidateMode) document.body.dataset.mode = "candidate";
     if (candidateMode) document.body.dataset.gate = "intro";
     const state = { questions: [], index: 0, answers: {}, view: "answer", autoTimer: null, submissionId: "", submissionKey: "", submissionStatus: "" };
     let saveTimer = 0;
+    let suppressDraftSave = false;
     let answerAnimFrameA = 0;
     let answerAnimFrameB = 0;
     let quizAssetsPreloaded = false;
@@ -2972,16 +2974,17 @@
         state.questions = EMBEDDED_QUESTIONS;
       }
       els.date.valueAsDate = new Date();
-      restore();
-      state.index = 0;
+      const restoredDraft = restore();
       renderJump();
       render();
       bind();
       if (candidateMode) {
         if (els.name.value) els.introName.value = els.name.value;
-        document.body.dataset.gate = "intro";
-        setView("answer");
-        setTimeout(() => els.introName.focus(), 80);
+        const answeredCount = Object.keys(state.answers).length;
+        const completedDraft = answeredCount >= state.questions.length;
+        document.body.dataset.gate = answeredCount ? "quiz" : "intro";
+        setView(completedDraft || state.view === "candidate" ? "candidate" : "answer");
+        if (!restoredDraft || !answeredCount) setTimeout(() => els.introName.focus(), 80);
       }
     }
 
@@ -2998,7 +3001,7 @@
         if (state.view === "answer") setView("candidate");
         window.print();
       });
-      els.prev.addEventListener("click", () => { cancelAutoAdvance(); state.index = Math.max(0, state.index - 1); setView("answer"); render(); });
+      els.prev.addEventListener("click", () => { cancelAutoAdvance(); state.index = Math.max(0, state.index - 1); setView("answer"); render(); scheduleSave(); });
       els.next.addEventListener("click", () => {
         goNextQuestion();
       });
@@ -3007,8 +3010,9 @@
         state.index = Math.max(0, state.index - 1);
         setView("answer");
         render();
+        scheduleSave();
       });
-      els.jump.addEventListener("change", () => { cancelAutoAdvance(); state.index = Number(els.jump.value); setView("answer"); render(); });
+      els.jump.addEventListener("change", () => { cancelAutoAdvance(); state.index = Number(els.jump.value); setView("answer"); render(); scheduleSave(); });
       [els.name, els.role, els.years, els.date, els.open].forEach(input => input.addEventListener("input", scheduleSave));
       if (candidateMode) {
         els.introStart.addEventListener("click", startCandidateAssessment);
@@ -3042,17 +3046,22 @@
         return;
       }
       els.introError.textContent = "";
+      const previousName = els.name.value.trim();
+      const hasProgress = Object.keys(state.answers).length > 0;
+      const shouldResume = hasProgress && (!previousName || previousName === name);
       els.name.value = name;
-      state.answers = {};
-      state.index = 0;
-      state.submissionId = "";
-      state.submissionKey = "";
-      state.submissionStatus = "";
-      localStorage.removeItem("talentAssessmentDraft");
-      flushSave();
+      if (!shouldResume) {
+        state.answers = {};
+        state.index = 0;
+        state.submissionId = "";
+        state.submissionKey = "";
+        state.submissionStatus = "";
+        localStorage.removeItem(DRAFT_KEY);
+      }
       document.body.dataset.gate = "quiz";
       setView("answer");
       render();
+      flushSave();
     }
 
     function goNextQuestion() {
@@ -3065,6 +3074,7 @@
         setView("candidate");
       }
       render();
+      flushSave();
     }
 
     function cancelAutoAdvance() {
@@ -3316,7 +3326,7 @@
         </div>
       `;
       const retest = els.reportView.querySelector(".candidate-retest");
-      if (retest) retest.addEventListener("click", () => setView("answer"));
+      if (retest) retest.addEventListener("click", resetAll);
       submitCandidateResult(result);
     }
 
@@ -3571,16 +3581,24 @@
     }
 
     function resetAll() {
+      suppressDraftSave = true;
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = 0;
+      }
       state.answers = {};
       state.index = 0;
       state.submissionId = "";
       state.submissionKey = "";
       state.submissionStatus = "";
       [els.name, els.role, els.years, els.open].forEach(input => input.value = "");
+      if (els.introName) els.introName.value = "";
       els.date.valueAsDate = new Date();
-      localStorage.removeItem("talentAssessmentDraft");
+      localStorage.removeItem(DRAFT_KEY);
+      if (candidateMode) document.body.dataset.gate = "intro";
       setView("answer");
       render();
+      suppressDraftSave = false;
     }
 
     function scheduleSave() {
@@ -3589,12 +3607,20 @@
     }
 
     function flushSave() {
+      if (suppressDraftSave) return;
       if (saveTimer) {
         clearTimeout(saveTimer);
         saveTimer = 0;
       }
-      localStorage.setItem("talentAssessmentDraft", JSON.stringify({
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
         answers: state.answers,
+        index: state.index,
+        view: state.view,
+        gate: document.body.dataset.gate || "intro",
+        submissionId: state.submissionId,
+        submissionKey: state.submissionKey,
+        submissionStatus: state.submissionStatus,
+        updatedAt: new Date().toISOString(),
         info: { name: els.name.value, role: els.role.value, years: els.years.value, date: els.date.value, open: els.open.value }
       }));
       updateProgress();
@@ -3603,16 +3629,24 @@
 
     function restore() {
       try {
-        const draft = JSON.parse(localStorage.getItem("talentAssessmentDraft") || "{}");
+        const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
         state.answers = draft.answers || {};
-        state.index = 0;
+        const draftIndex = Number(draft.index);
+        state.index = Number.isFinite(draftIndex) ? Math.min(Math.max(draftIndex, 0), Math.max(state.questions.length - 1, 0)) : 0;
+        state.view = draft.view === "candidate" ? "candidate" : "answer";
+        state.submissionId = draft.submissionId || "";
+        state.submissionKey = draft.submissionKey || "";
+        state.submissionStatus = draft.submissionStatus || "";
+        if (draft.gate) document.body.dataset.gate = draft.gate;
         const info = draft.info || {};
         els.name.value = info.name || "";
         els.role.value = info.role || "";
         els.years.value = info.years || "";
         els.open.value = info.open || "";
         if (info.date) els.date.value = info.date;
+        return Boolean(Object.keys(state.answers).length || info.name || draft.index || draft.view === "candidate");
       } catch {}
+      return false;
     }
 
     function showToast(message) {
