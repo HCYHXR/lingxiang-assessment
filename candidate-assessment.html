@@ -1,0 +1,3614 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>灵相测评</title>
+  <link rel="preload" as="image" href="talent_tool_assets/candidate_intro_platform_fast.webp" fetchpriority="high">
+  <style>
+    :root {
+      --ink: #182230;
+      --muted: #667085;
+      --line: #d6dde8;
+      --bg: #f4f7fa;
+      --panel: #fff;
+      --primary: #166270;
+      --green: #2d7a5f;
+      --amber: #b86820;
+      --blue: #315f9d;
+      --red: #a84454;
+      --shadow: 0 20px 55px rgba(21, 35, 55, .12);
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(140deg, #e6f1f3 0%, #f6f8fb 38%, #f7efe7 100%);
+      min-height: 100vh;
+    }
+    button, input, textarea, select { font: inherit; }
+    .app { width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 24px 0 40px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .brand { display: flex; gap: 12px; align-items: center; min-width: 0; }
+    .mark { width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--primary), var(--green)); font-weight: 900; }
+    h1 { margin: 0; font-size: clamp(22px, 3vw, 34px); line-height: 1.15; letter-spacing: 0; }
+    .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 8px;
+      min-height: 42px;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .layout { display: grid; grid-template-columns: 290px 1fr; gap: 16px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid rgba(24, 34, 48, .08); border-radius: 8px; box-shadow: var(--shadow); }
+    .side { padding: 16px; position: sticky; top: 12px; }
+    .field { margin-bottom: 12px; }
+    label { display: block; font-size: 13px; color: #344054; font-weight: 800; margin-bottom: 6px; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 11px;
+      outline: none;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea { min-height: 104px; resize: vertical; line-height: 1.6; }
+    input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(22, 98, 112, .12); }
+    .progress-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin: 12px 0 8px; }
+    .progress { height: 9px; border-radius: 999px; overflow: hidden; background: #e8eef5; position: relative; }
+    .progress span { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--green), var(--amber), var(--primary)); background-size: 180% 100%; transition: width .28s ease; animation: progressFlow 3s linear infinite; }
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 14px; }
+    .tab { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 9px 8px; cursor: pointer; font-weight: 800; color: var(--muted); }
+    .tab.active { color: #fff; border-color: var(--primary); background: var(--primary); }
+    .notice { color: var(--muted); font-size: 13px; line-height: 1.6; margin-top: 12px; }
+    .main { overflow: hidden; }
+    body[data-view="answer"] {
+      background: linear-gradient(180deg, #cfead5 0%, #edf3d4 100%);
+    }
+    body[data-view="answer"] .app {
+      width: min(920px, calc(100% - 28px));
+      padding-top: 28px;
+    }
+    body[data-view="answer"] .topbar,
+    body[data-view="answer"] .side,
+    body[data-view="answer"] .toolbar,
+    body[data-view="answer"] .nav {
+      display: none;
+    }
+    body[data-view="answer"] .layout {
+      display: block;
+    }
+    body[data-view="answer"] .panel.main {
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+    body[data-mode="candidate"] .topbar,
+    body[data-mode="candidate"] .side,
+    body[data-mode="candidate"] .toolbar,
+    body[data-mode="candidate"] .nav,
+    body[data-mode="candidate"] .floating-tabs {
+      display: none !important;
+    }
+    body[data-mode="candidate"] .app {
+      width: min(920px, calc(100% - 28px));
+      padding-top: 28px;
+    }
+    body[data-mode="candidate"] .layout {
+      display: block;
+    }
+    body[data-mode="candidate"] .panel.main {
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .app {
+      width: 100vw;
+      min-height: 100vh;
+      padding-top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .layout {
+      width: min(1120px, calc(100vw - 48px));
+      margin: 0 auto;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area {
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 18px;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card {
+      margin: 0 auto;
+    }
+    body[data-mode="candidate"][data-view="candidate"] {
+      background: linear-gradient(115deg, #a7bdc0 0%, #d7e3db 54%, #f2eddc 100%);
+    }
+    body[data-mode="candidate"][data-view="candidate"] .app {
+      width: min(760px, 100%);
+      padding: 0;
+    }
+    body[data-mode="candidate"][data-view="candidate"] .report {
+      padding: 0;
+    }
+    body[data-mode="candidate"][data-view="candidate"] .candidate-stage {
+      border-radius: 0;
+      min-height: 100vh;
+    }
+    body[data-mode="candidate"][data-gate="intro"] {
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255,255,255,.42) 0 20%, rgba(255,255,255,.18) 52%, rgba(255,255,255,0) 82%),
+        linear-gradient(180deg, #d6ecd8 0%, #edf5d6 100%);
+    }
+    body[data-mode="candidate"][data-gate="intro"] .layout,
+    body[data-mode="candidate"][data-gate="intro"] .floating-tabs {
+      display: none !important;
+    }
+    .candidate-intro {
+      display: none;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 42px 18px;
+      position: relative;
+      isolation: isolate;
+    }
+    .candidate-intro::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 58%);
+      z-index: -1;
+    }
+    body[data-mode="candidate"][data-gate="intro"] .candidate-intro {
+      display: flex;
+    }
+    .intro-card {
+      width: min(560px, calc(100vw - 36px));
+      min-height: min(820px, calc(100vh - 72px));
+      border-radius: 28px;
+      padding: 24px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: rgba(255,255,255,.82);
+      border: 1px solid rgba(255,255,255,.78);
+      box-shadow: 0 30px 76px rgba(51,78,72,.18);
+      backdrop-filter: blur(10px);
+      color: #102632;
+    }
+    .intro-header {
+      display: flex;
+      justify-content: flex-start;
+      gap: 16px;
+      align-items: center;
+      padding: 0 0 20px;
+    }
+    .intro-logo {
+      width: 150px;
+      height: auto;
+      display: block;
+      object-fit: contain;
+      border-radius: 999px;
+      background: rgba(255,255,255,.86);
+      box-shadow: 0 12px 28px rgba(51,78,72,.1);
+    }
+    .intro-copy { padding: 22px 6px 0; }
+    .intro-title {
+      margin: 0 0 10px;
+      font-size: 40px;
+      line-height: 1.08;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .intro-subtitle {
+      margin: 0;
+      color: #506171;
+      font-size: 18px;
+      line-height: 1.72;
+      font-weight: 800;
+    }
+    .intro-visual {
+      width: 100%;
+      height: min(45vh, 420px);
+      min-height: 330px;
+      margin: 0;
+      flex: 1 1 auto;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(226,235,232,.9);
+      box-shadow: 0 16px 34px rgba(51,78,72,.1);
+      background: #dce8e6;
+    }
+    .intro-visual img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center 46%;
+    }
+    .intro-form {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      align-items: stretch;
+      margin: 24px 0 0;
+      padding: 22px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 0 18px 42px rgba(51,78,72,.1);
+    }
+    .intro-field { min-width: 0; }
+    .intro-field label {
+      font-size: 15px;
+      color: #405666;
+      margin-bottom: 8px;
+    }
+    .intro-field input {
+      height: 60px;
+      border-radius: 16px;
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 0;
+    }
+    .intro-start {
+      width: 100%;
+      border: 0;
+      border-radius: 16px;
+      min-height: 64px;
+      color: #fff;
+      background: #20383c;
+      font-size: 21px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 16px 30px rgba(32,56,60,.22);
+    }
+    .intro-error {
+      grid-column: 1 / -1;
+      min-height: 20px;
+      margin: -4px 0 0;
+      color: #a84454;
+      font-size: 14px;
+      font-weight: 900;
+    }
+    @media (max-width: 720px) {
+      .intro-card { width: min(100%, 520px); min-height: auto; }
+      .intro-header { padding: 0 0 18px; }
+      .intro-title { font-size: 34px; }
+      .intro-visual { min-height: 240px; height: 34vh; }
+      .intro-form { padding: 18px; }
+    }
+    @media (min-width: 960px) {
+      .candidate-intro {
+        padding: 48px 24px;
+      }
+      .intro-card {
+        width: min(640px, 46vw);
+        min-height: auto;
+        padding: 28px;
+      }
+      .intro-visual {
+        height: min(42vh, 430px);
+        min-height: 300px;
+      }
+      .intro-copy {
+        padding-top: 22px;
+      }
+    }
+    .floating-tabs {
+      display: none;
+      position: fixed;
+      top: 16px;
+      right: 18px;
+      z-index: 50;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 999px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 0 16px 34px rgba(21,35,55,.14);
+      backdrop-filter: blur(12px);
+    }
+    body[data-view="answer"] .floating-tabs { display: flex; }
+    .floating-tab {
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: transparent;
+      color: #344054;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .floating-tab.active {
+      background: #1f3b3d;
+      color: #fff;
+    }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid rgba(24,34,48,.08); gap: 12px; }
+    .section-kicker { color: var(--primary); font-size: 13px; font-weight: 900; }
+    .question-area {
+      padding: 28px 18px 34px;
+      min-height: 760px;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      background: linear-gradient(180deg, #d9efdc 0%, #eef5d7 100%);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .question-area::before {
+      content: "";
+      position: absolute;
+      inset: -30%;
+      background: repeating-linear-gradient(115deg, transparent 0 34px, rgba(45,122,95,.07) 34px 36px);
+      opacity: .55;
+      transform: translate3d(0,0,0);
+      animation: answerDrift 18s linear infinite;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .answer-trail { display: none; }
+    .answer-trail span {
+      width: 11px;
+      height: 11px;
+      border: 2px solid rgba(22,98,112,.4);
+      background: rgba(255,255,255,.78);
+      transform: rotate(45deg);
+      animation: trailStep 1.8s ease-in-out infinite;
+      animation-delay: calc(var(--i) * .18s);
+    }
+    .game-card {
+      width: min(100%, 1080px);
+      min-height: 660px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.8);
+      border-radius: 30px;
+      background: url("talent_tool_assets/answer_scene_cloud_realm_fast.webp") center / cover no-repeat;
+      box-shadow: 0 28px 70px rgba(54, 83, 64, .22);
+      backdrop-filter: blur(12px);
+      position: relative;
+    }
+    .game-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(226,238,236,.46) 0%, rgba(236,245,242,.2) 42%, rgba(255,255,255,.08) 100%);
+      pointer-events: none;
+    }
+    .game-head {
+      position: relative;
+      z-index: 8;
+      width: min(45%, 430px);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 18px 20px 6px;
+    }
+    .game-kicker { font-size: 16px; line-height: 1.25; font-weight: 900; color: #1f2933; }
+    .game-candidate-pill { flex: 0 0 auto; border-radius: 999px; padding: 7px 11px; background: rgba(255,255,255,.92); color: #5c6670; font-size: 13px; font-weight: 900; }
+    .game-progress-line { height: 7px; border-radius: 999px; background: rgba(255,255,255,.85); overflow: hidden; margin-top: 10px; }
+    .game-progress-line span { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #71b78e, #d2b25b, #8a76c8); transition: width .32s ease; }
+    .game-question-panel {
+      position: relative;
+      z-index: 8;
+      width: min(54%, 580px);
+      margin: 6px auto 18px;
+      padding: 11px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.76);
+      box-shadow: 0 18px 42px rgba(22,45,58,.14);
+      backdrop-filter: blur(10px);
+    }
+    .game-meta-row { display: flex; justify-content: space-between; gap: 8px; color: #667085; font-size: 12px; font-weight: 900; margin-bottom: 5px; }
+    .quest-hud {
+      display: none;
+    }
+    .quest-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .quest-label { color: var(--primary); font-size: 13px; font-weight: 900; }
+    .quest-title { margin-top: 2px; font-size: 20px; font-weight: 900; }
+    .quest-status { color: #667085; font-size: 13px; font-weight: 800; text-align: right; }
+    .quest-map {
+      position: relative;
+      height: 68px;
+      padding-top: 22px;
+    }
+    .quest-track {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      top: 35px;
+      height: 8px;
+      border-radius: 999px;
+      background: #dfe8e8;
+      overflow: hidden;
+    }
+    .quest-fill {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #2f6f73, #6ca36f, #b9873a);
+      transition: width .32s ease;
+    }
+    .quest-runner {
+      position: absolute;
+      top: 18px;
+      left: 6%;
+      width: 34px;
+      height: 34px;
+      border: 3px solid #1f3b3d;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--primary);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 10px 24px rgba(21,35,55,.16);
+      transform: translateX(-50%);
+      transition: left .32s cubic-bezier(.2,.8,.2,1);
+      animation: runnerBounce 1.6s ease-in-out infinite;
+      z-index: 2;
+    }
+    .quest-nodes { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 3; }
+    .quest-node { text-align: center; color: #667085; font-size: 12px; font-weight: 900; }
+    .quest-dot {
+      width: 24px;
+      height: 24px;
+      border: 3px solid #cfd9dc;
+      background: #fff;
+      border-radius: 50%;
+      margin: 0 auto 8px;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .quest-node.passed .quest-dot { border-color: #2d7a5f; background: #2d7a5f; box-shadow: 0 0 0 5px rgba(45,122,95,.12); }
+    .quest-node.active .quest-dot { border-color: #b9873a; background: #fff3cc; box-shadow: 0 0 0 7px rgba(185,135,58,.16); transform: scale(1.08); }
+    .quest-node.passed, .quest-node.active { color: #1f3b3d; }
+    .level-scene {
+      position: absolute;
+      inset: 0;
+      min-height: 660px;
+      height: auto;
+      border: 0;
+      border-radius: 0;
+      overflow: hidden;
+      margin: 0;
+      background: transparent;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+    }
+    .level-scene::before { content: none; }
+    .level-scene::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 36%, rgba(111,157,184,.22) 0 10%, transparent 28%),
+        radial-gradient(circle at 44% 28%, rgba(255,255,255,.95) 0 2px, transparent 3px),
+        radial-gradient(circle at 70% 18%, rgba(255,255,255,.8) 0 2px, transparent 3px);
+      opacity: .9;
+      animation: sceneSpark 2.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .level-scene.stage-1 { filter: hue-rotate(0deg); }
+    .level-scene.stage-2 { filter: hue-rotate(22deg) saturate(1.04); }
+    .level-scene.stage-3 { filter: hue-rotate(-18deg) saturate(1.05); }
+    .level-scene.stage-4 { filter: hue-rotate(42deg) saturate(1.05); }
+    .scene-card {
+      position: absolute;
+      left: 26px;
+      top: 24px;
+      z-index: 2;
+      color: #1f3b3d;
+      font-weight: 900;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.7);
+    }
+    .scene-card small { display: block; color: #667085; font-size: 12px; margin-top: 4px; }
+    .scene-runner { display: none; }
+    .scene-runner-img {
+      position: absolute;
+      left: var(--runner-left, 50%);
+      bottom: 150px;
+      z-index: 6;
+      width: 190px;
+      height: 190px;
+      object-fit: contain;
+      transform: translateX(calc(-50% + var(--runner-shift, 0px)));
+      filter: none;
+      animation: runnerBob .58s ease-in-out infinite alternate;
+      transition: left .32s cubic-bezier(.2,.8,.2,1), transform .32s cubic-bezier(.2,.8,.2,1);
+    }
+    .scene-gate { display: none; }
+    .scene-gate span { display: none; }
+    .scene-flag { display: none; }
+    .scene-flag::after { content: none; }
+    .answer-animate .level-scene { animation: sceneEnter .38s cubic-bezier(.2,.8,.2,1) both; }
+    .scene-choice-layer {
+      position: absolute;
+      left: 50%;
+      bottom: 66px;
+      z-index: 7;
+      width: min(58%, 620px);
+      min-height: 74px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(18px, 3vw, 42px);
+      pointer-events: none;
+    }
+    .scene-choice {
+      position: static;
+      flex: 0 0 auto;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.9);
+      background: rgba(255,255,255,.78);
+      color: #415452;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 18px;
+      box-shadow: 0 8px 24px rgba(61,81,55,.18);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .scene-choice:hover { transform: translateY(-5px); background: #fff; box-shadow: 0 14px 30px rgba(19,47,68,.24); }
+    .scene-choice.selected { background: #fff1a8; border-color: #fff; box-shadow: 0 0 0 6px rgba(255,241,168,.3), 0 14px 30px rgba(19,47,68,.24); }
+    .answer-animate .scene-runner-img { animation: runnerCross .78s cubic-bezier(.2,.8,.2,1) both, runnerBob .58s ease-in-out .78s infinite alternate; }
+    .answer-animate .scene-gate { animation: gatePulse .72s ease both; }
+    .question-title { margin: 0 0 8px; padding-right: 0; font-size: clamp(15px, 1.45vw, 18px); line-height: 1.2; letter-spacing: 0; }
+    .answer-animate .question-title { animation: answerIn .36s cubic-bezier(.2,.8,.2,1) both; }
+    .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 8px; }
+    .option {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 34px;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 8px;
+      cursor: pointer;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .answer-animate .option { animation: optionIn .32s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 42ms); }
+    .option:hover { border-color: rgba(22,98,112,.45); background: #f8fbfc; transform: translateX(4px); box-shadow: 0 10px 24px rgba(21,35,55,.08); }
+    .option.selected { border-color: var(--primary); background: rgba(22,98,112,.08); box-shadow: 0 0 0 3px rgba(22,98,112,.08); }
+    .letter { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); font-weight: 900; color: var(--muted); transition: transform .18s ease, background .18s ease, color .18s ease, border-color .18s ease; }
+    .option.selected .letter { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .option.selected .letter { animation: letterPop .22s ease; }
+    .nav { display: flex; justify-content: space-between; gap: 10px; padding: 16px 18px 18px; border-top: 1px solid rgba(24,34,48,.08); background: #fbfcfe; }
+    .nav .btn { transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+    .nav .btn:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(21,35,55,.08); }
+    .report { display: none; padding: 18px; }
+    .report.active { display: block; }
+    .report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .card { border: 1px solid var(--line); border-radius: 8px; padding: 15px; background: #fff; }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+    .hero-card { grid-column: 1 / -1; display: grid; grid-template-columns: 1.25fr .75fr; gap: 14px; align-items: center; background: linear-gradient(135deg, #ffffff 0%, #edf7f5 100%); }
+    .spirit-art { width: min(100%, 360px); margin: 0 auto; display: block; border-radius: 8px; object-fit: contain; mix-blend-mode: multiply; }
+    .reference-img { width: 100%; border: 1px solid var(--line); border-radius: 8px; display: block; background: #fff; }
+    .hr-sheet {
+      border: 2px solid #1f2933;
+      background:
+        linear-gradient(rgba(255,255,255,.92), rgba(255,255,255,.92)),
+        repeating-linear-gradient(0deg, #e8f0eb 0 1px, transparent 1px 26px),
+        repeating-linear-gradient(90deg, #e8f0eb 0 1px, transparent 1px 26px);
+      padding: 22px;
+      min-height: 860px;
+    }
+    .hr-sheet-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; border-bottom: 1px solid #dce6df; padding-bottom: 16px; margin-bottom: 16px; }
+    .hr-brand { display: flex; gap: 14px; align-items: center; }
+    .hr-logo { width: 48px; height: 48px; border: 3px solid #20323b; background: #254250; color: #fff; display: grid; place-items: center; font-weight: 900; }
+    .hr-brand-small { color: #34515d; font-weight: 900; font-size: 13px; letter-spacing: .02em; }
+    .hr-title { margin: 2px 0 0; font-size: 30px; line-height: 1.1; font-weight: 900; }
+    .hr-actions { display: flex; gap: 9px; }
+    .hr-action { border: 2px solid #202b33; background: #fff; font-weight: 900; min-width: 48px; height: 42px; display: grid; place-items: center; cursor: pointer; color: var(--ink); padding: 0 10px; }
+    .hr-action:hover { background: #f1f6f4; }
+    .hr-subhead { color: #294653; font-weight: 900; font-size: 13px; margin-bottom: 4px; }
+    .hr-report-name { font-size: 23px; font-weight: 900; margin-bottom: 20px; }
+    .hr-meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .hr-meta { border: 1px solid #d7ded9; background: rgba(255,255,255,.72); padding: 9px 12px; font-weight: 800; color: #40505c; }
+    .hr-profile { text-align: center; margin: 12px 0 20px; }
+    .hr-profile-kicker { color: #315f6d; font-size: 12px; font-weight: 900; letter-spacing: .04em; }
+    .hr-profile-main { font-size: 40px; line-height: 1.05; font-weight: 900; margin: 6px 0 10px; }
+    .hr-profile-sub { color: #667085; font-weight: 800; }
+    .hr-score-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 22px; }
+    .hr-score-box { border: 2px solid #1f2933; background: rgba(255,255,255,.78); text-align: center; padding: 11px 8px; min-height: 70px; }
+    .hr-score-box.highlight { background: #fff3cc; }
+    .hr-score-label { color: #5a6672; font-size: 13px; font-weight: 900; }
+    .hr-score-value { font-size: 25px; font-weight: 900; margin-top: 3px; }
+    .hr-two-col { display: grid; grid-template-columns: .95fr 1.05fr; gap: 22px; align-items: start; }
+    .hr-panel { border: 1px solid #d8e1dc; background: rgba(255,255,255,.68); padding: 16px; margin-bottom: 16px; }
+    .hr-panel.emphasis { border: 2px solid #1f2933; background: #fff4d2; }
+    .hr-panel h3 { margin: 0 0 12px; font-size: 20px; }
+    .hr-panel p { margin: 0 0 10px; color: #40505c; line-height: 1.75; }
+    .hr-panel li { margin: 4px 0; }
+    .hr-bar-row { display: grid; grid-template-columns: 86px 1fr 42px; gap: 10px; align-items: center; margin: 11px 0; font-weight: 800; }
+    .hr-bar-track { height: 12px; border: 2px solid #1f2933; background: #f8faf9; }
+    .hr-bar-fill { height: 100%; background: linear-gradient(90deg, #87cdbb, #58539b); }
+    .hr-detail { border: 2px solid #1f2933; background: rgba(255,255,255,.7); padding: 18px; margin-top: 2px; }
+    .hr-detail h3 { display: inline-block; margin: 0 0 12px; padding: 3px 8px; background: #fff1a8; font-size: 22px; }
+    .hr-detail ul { margin-top: 0; }
+    .candidate-stage {
+      min-height: 860px;
+      padding: 28px 18px;
+      background: linear-gradient(115deg, #a7bdc0 0%, #d7e3db 54%, #f2eddc 100%);
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .phone-report {
+      width: min(100%, 560px);
+      background: rgba(238, 246, 242, .76);
+      border-radius: 30px;
+      padding: 30px 28px;
+      box-shadow: 0 28px 70px rgba(30, 58, 62, .2);
+      border: 1px solid rgba(255,255,255,.72);
+      color: #102632;
+    }
+    .candidate-title-row { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 34px; }
+    .report-title { font-size: 34px; font-weight: 900; line-height: 1.05; margin: 0 0 10px; letter-spacing: 0; }
+    .candidate-meta { color: #425466; font-size: 15px; line-height: 1.45; font-weight: 900; }
+    .m2-logo { flex: 0 0 auto; width: 92px; height: 68px; border-radius: 16px; background: rgba(255,255,255,.74); display: grid; place-items: center; color: #b43a2e; font-weight: 900; box-shadow: 0 14px 34px rgba(50,63,67,.12); text-align: center; line-height: 1; }
+    .m2-logo strong { display: block; font-size: 22px; letter-spacing: 0; }
+    .m2-logo span { display: block; margin-top: 5px; font-size: 9px; color: #a3362c; }
+    .candidate-card {
+      background: rgba(255,255,255,.78);
+      border-radius: 22px;
+      padding: 18px 20px;
+      margin-top: 16px;
+      border: 1px solid rgba(255,255,255,.74);
+    }
+    .candidate-hero-card { padding: 18px 20px 20px; }
+    .spirit-summary { display: grid; grid-template-columns: 178px 1fr; gap: 18px; align-items: center; }
+    .spirit-summary img { width: 178px; height: 178px; object-fit: contain; border-radius: 12px; mix-blend-mode: multiply; }
+    .type-label { color: #657281; font-size: 15px; font-weight: 900; }
+    .type-main { font-size: 34px; font-weight: 900; margin: 4px 0 10px; line-height: 1.05; }
+    .spirit-text { color: #506171; font-size: 17px; line-height: 1.65; margin: 0; }
+    .trait-score-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+    .trait-score-strip div { text-align: center; min-height: 72px; border-radius: 14px; padding: 10px 6px; background: rgba(255,255,255,.66); color: #213744; font-size: 15px; font-weight: 900; border: 1px solid rgba(234,239,236,.72); }
+    .trait-score-strip div.active { background: linear-gradient(180deg, rgba(236,248,245,.92), rgba(224,239,235,.9)); border-color: rgba(161,195,188,.75); box-shadow: inset 0 0 0 1px rgba(143,180,174,.22); }
+    .trait-score-strip strong { display: block; color: #4b8378; font-size: 28px; line-height: 1.08; margin-top: 2px; }
+    .chameleon-line { display: block; margin-top: 12px; color: #405666; font-size: 15px; font-weight: 700; }
+    .candidate-section-title { margin: 28px 0 12px; padding-top: 16px; border-top: 1px solid rgba(196,207,205,.72); font-size: 22px; line-height: 1.1; font-weight: 900; }
+    .candidate-block { border-top: 1px solid rgba(221,228,225,.9); padding: 16px 0; }
+    .candidate-block:first-of-type { border-top: 0; padding-top: 8px; }
+    .candidate-block b { display: block; margin-bottom: 8px; color: #516172; font-size: 16px; }
+    .bigfive-result { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 8px 0 14px; }
+    .bigfive-name { font-size: 38px; font-weight: 900; line-height: 1; }
+    .bigfive-score { color: #6b7280; font-size: 18px; font-weight: 900; padding-bottom: 5px; }
+    .bigfive-tone { margin: -2px 0 14px; color: #4b5c68; font-weight: 900; line-height: 1.6; }
+    .candidate-retest { width: 100%; border: 0; border-radius: 18px; color: #fff; background: #20383c; padding: 18px; font-size: 20px; font-weight: 900; margin-top: 18px; cursor: pointer; }
+    .sync-note { margin: 16px 0 0; color: #506171; font-size: 14px; font-weight: 800; text-align: center; }
+    @media (max-width: 860px) {
+      .candidate-stage { padding: 14px; }
+      .phone-report { border-radius: 24px; padding: 24px 20px; }
+      .spirit-summary { grid-template-columns: minmax(132px, 34vw) 1fr; }
+      .spirit-summary img { width: min(172px, 34vw); height: min(172px, 34vw); }
+      .hr-sheet { padding: 14px; min-height: auto; }
+      .hr-sheet-header, .hr-brand { align-items: flex-start; }
+      .hr-sheet-header { flex-direction: column; }
+      .hr-meta-grid, .hr-two-col, .hr-score-strip { grid-template-columns: 1fr; }
+      .hr-profile-main { font-size: 32px; }
+    }
+    @media (max-width: 560px) {
+      .candidate-title-row { margin-bottom: 24px; }
+      .report-title { font-size: 30px; }
+      .m2-logo { width: 78px; height: 58px; }
+      .spirit-summary { grid-template-columns: 1fr; text-align: left; }
+      .spirit-summary img { width: 170px; height: 170px; margin: -6px auto 0; }
+      .trait-score-strip { grid-template-columns: repeat(2, 1fr); }
+      .bigfive-result { align-items: flex-start; flex-direction: column; }
+    }
+    .type-name { font-size: clamp(28px, 4vw, 46px); line-height: 1; font-weight: 900; margin: 4px 0 10px; }
+    .summary { margin: 0; color: #344054; line-height: 1.75; }
+    .score-row { display: grid; grid-template-columns: 108px 1fr 44px; align-items: center; gap: 9px; margin: 10px 0; font-size: 14px; }
+    .bar { height: 9px; border-radius: 999px; overflow: hidden; background: #e7edf4; }
+    .bar span { display: block; height: 100%; background: var(--primary); }
+    .score-row:nth-child(3n) .bar span { background: var(--green); }
+    .score-row:nth-child(4n) .bar span { background: var(--amber); }
+    .score-row:nth-child(5n) .bar span { background: var(--blue); }
+    ul { margin: 8px 0 0; padding-left: 19px; line-height: 1.72; color: #344054; }
+    .badge { display: inline-flex; align-items: center; min-height: 28px; border-radius: 999px; padding: 4px 10px; font-weight: 900; font-size: 13px; background: rgba(22,98,112,.1); color: var(--primary); margin: 0 6px 6px 0; }
+    .warn { background: #fff3e6; color: #9a531d; }
+    .strong { background: #eaf6ef; color: #247152; }
+    .toast { position: fixed; right: 18px; bottom: 18px; background: #182230; color: #fff; padding: 10px 13px; border-radius: 8px; opacity: 0; transform: translateY(12px); transition: .2s ease; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .side { position: static; }
+      .hero-card, .report-grid { grid-template-columns: 1fr; }
+      .score-row { grid-template-columns: 96px 1fr 38px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .actions { justify-content: flex-start; }
+      .question-title { padding-right: 0; }
+      .answer-trail { display: none; }
+      .quest-top { align-items: flex-start; flex-direction: column; }
+      .quest-status { text-align: left; }
+      .quest-node { font-size: 11px; }
+      .game-head { flex-direction: column; }
+      .game-card { min-height: 760px; }
+      .game-head, .game-question-panel { width: calc(100% - 28px); margin-left: auto; margin-right: auto; }
+      .options { grid-template-columns: 1fr; }
+      .level-scene { min-height: 760px; }
+      .scene-runner-img { width: 132px; height: 132px; left: var(--runner-left, 50%); bottom: 124px; }
+      .scene-choice-layer { width: min(86%, 520px); gap: 14px; bottom: 58px; }
+    }
+    @keyframes progressFlow {
+      from { background-position: 0% 50%; }
+      to { background-position: 180% 50%; }
+    }
+    @keyframes answerDrift {
+      from { transform: translate3d(-18px, -10px, 0); }
+      to { transform: translate3d(18px, 10px, 0); }
+    }
+    @keyframes trailStep {
+      0%, 100% { opacity: .35; transform: rotate(45deg) scale(.82); }
+      45% { opacity: 1; transform: rotate(45deg) scale(1.08); }
+    }
+    @keyframes answerIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes optionIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes letterPop {
+      0% { transform: scale(.86); }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    @keyframes runnerBounce {
+      0%, 100% { margin-top: 0; }
+      50% { margin-top: -4px; }
+    }
+    @keyframes roadMove {
+      from { background-position: 0 0, 0 0; }
+      to { background-position: 78px 0, 0 0; }
+    }
+    @keyframes sceneSpark {
+      0%, 100% { opacity: .48; }
+      50% { opacity: .9; }
+    }
+    @keyframes sceneEnter {
+      from { opacity: 0; transform: translateY(10px) scale(.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes runnerCross {
+      from { left: 38%; transform: translateX(-50%) translateY(8px) scale(.92); }
+      70% { left: 58%; transform: translateX(-50%) translateY(-4px) scale(1.04); }
+      to { left: 50%; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+    @keyframes runnerBob {
+      from { transform: translateX(-50%) translateY(0); }
+      to { transform: translateX(-50%) translateY(-5px); }
+    }
+    @keyframes stepLeft {
+      from { transform: rotate(18deg); }
+      to { transform: rotate(-18deg); }
+    }
+    @keyframes stepRight {
+      from { transform: rotate(-18deg); }
+      to { transform: rotate(18deg); }
+    }
+    @keyframes flagWave {
+      from { transform: skewY(0deg); }
+      to { transform: skewY(-8deg); }
+    }
+    @keyframes gatePulse {
+      0% { box-shadow: 0 0 0 0 rgba(185,135,58,.26); }
+      70% { box-shadow: 0 0 0 12px rgba(185,135,58,0); }
+      100% { box-shadow: 0 0 0 0 rgba(185,135,58,0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+    @media print {
+      body { background: #fff; }
+      .side, .toolbar, .nav, .topbar .actions, .question-area { display: none !important; }
+      .app { width: 100%; padding: 0; }
+      .layout { display: block; }
+      .panel { box-shadow: none; border: 0; }
+      .report { display: block !important; padding: 0; }
+      .card { break-inside: avoid; }
+    }
+    .candidate-game-name,
+    .candidate-game-back {
+      display: none;
+    }
+    /* candidate quiz final 9-16 layout v4028 */
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .app {
+      width: 100vw !important;
+      height: 100dvh !important;
+      min-height: 100dvh !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: hidden !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .layout {
+      display: block !important;
+      width: min(calc((100dvh - 24px) * 9 / 16), calc(100vw - 24px), 720px) !important;
+      height: auto !important;
+      aspect-ratio: 9 / 16 !important;
+      min-height: 0 !important;
+      margin: 0 auto !important;
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .panel.main,
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area,
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      aspect-ratio: auto !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .panel.main {
+      overflow: visible !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area {
+      padding: 0 !important;
+      display: block !important;
+      background: transparent !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area::before {
+      content: none !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card {
+      margin: 0 !important;
+      border-radius: 28px !important;
+      background-position: center center !important;
+      box-shadow: 0 18px 46px rgba(54, 83, 64, .22) !important;
+      border: 0 !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-head {
+      position: static !important;
+      width: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      display: block !important;
+      text-align: center !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card .game-kicker {
+      display: block !important;
+      position: absolute !important;
+      top: 18px !important;
+      left: 50% !important;
+      right: auto !important;
+      width: auto !important;
+      min-width: 0 !important;
+      transform: translateX(-50%) !important;
+      text-align: center !important;
+      font-size: clamp(20px, 4vw, 25px) !important;
+      line-height: 1.15 !important;
+      white-space: nowrap !important;
+      z-index: 90 !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card .game-progress-line {
+      position: absolute !important;
+      top: 52px !important;
+      left: 50% !important;
+      right: auto !important;
+      width: min(220px, 38%) !important;
+      margin: 0 !important;
+      transform: translateX(-50%) !important;
+      z-index: 90 !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-candidate-pill,
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .candidate-game-name {
+      display: block !important;
+      position: absolute !important;
+      top: 18px !important;
+      right: 18px !important;
+      left: auto !important;
+      z-index: 88 !important;
+      border-radius: 999px !important;
+      padding: 8px 13px !important;
+      background: rgba(255,255,255,.78) !important;
+      color: #5c6670 !important;
+      font-size: 13px !important;
+      line-height: 1.2 !important;
+      font-weight: 900 !important;
+      backdrop-filter: blur(8px) !important;
+      transform: none !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .candidate-game-name {
+      visibility: hidden !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-card {
+      display: none !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .candidate-game-back {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      position: absolute !important;
+      left: 24px !important;
+      bottom: 128px !important;
+      z-index: 12 !important;
+      border: 0 !important;
+      border-radius: 8px !important;
+      padding: 8px 14px !important;
+      background: rgba(255,255,255,.18) !important;
+      color: rgba(92,102,112,.86) !important;
+      font-size: 18px !important;
+      font-weight: 900 !important;
+      cursor: pointer !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .candidate-game-back:disabled {
+      opacity: .32 !important;
+      cursor: not-allowed !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-question-panel {
+      position: absolute !important;
+      z-index: 8 !important;
+      top: 82px !important;
+      left: 50% !important;
+      width: calc(100% - 46px) !important;
+      margin: 0 !important;
+      padding: clamp(16px, 3vw, 26px) !important;
+      border-radius: 24px !important;
+      background: rgba(255,255,255,.92) !important;
+      box-shadow: 0 14px 34px rgba(22,45,58,.13) !important;
+      backdrop-filter: blur(10px) !important;
+      transform: translateX(-50%) !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-meta-row {
+      font-size: clamp(14px, 2.8vw, 20px) !important;
+      margin-bottom: 10px !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-title {
+      font-size: clamp(22px, 4.8vw, 34px) !important;
+      line-height: 1.22 !important;
+      margin: 0 0 16px !important;
+      padding-right: 0 !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .options {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 10px !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .option {
+      min-height: clamp(52px, 7vh, 74px) !important;
+      padding: 10px 18px !important;
+      font-size: clamp(16px, 3.2vw, 22px) !important;
+      border-radius: 14px !important;
+      justify-content: flex-start !important;
+      display: grid !important;
+      grid-template-columns: clamp(34px, 6.8vw, 48px) 1fr !important;
+      column-gap: 24px !important;
+      align-items: center !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .letter {
+      width: clamp(34px, 6.8vw, 48px) !important;
+      height: clamp(34px, 6.8vw, 48px) !important;
+      font-size: clamp(16px, 3vw, 24px) !important;
+      margin-right: 0 !important;
+      flex: 0 0 auto !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .level-scene {
+      min-height: 0 !important;
+      height: 100% !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-runner-img {
+      mix-blend-mode: normal !important;
+      filter: none !important;
+      width: clamp(130px, 28vw, 210px) !important;
+      height: clamp(130px, 28vw, 210px) !important;
+      bottom: 160px !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-choice-layer {
+      bottom: 42px !important;
+      width: min(86%, 520px) !important;
+      min-height: 86px !important;
+      gap: clamp(16px, 5vw, 42px) !important;
+    }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-choice {
+      width: clamp(58px, 13vw, 80px) !important;
+      height: clamp(58px, 13vw, 80px) !important;
+      font-size: clamp(23px, 5vw, 32px) !important;
+    }
+    @media (max-width: 760px) {
+      html,
+      body {
+        margin: 0 !important;
+        width: 100% !important;
+        min-height: 100% !important;
+        overflow-x: hidden !important;
+        background: linear-gradient(180deg, #cfead5 0%, #edf3d4 100%) !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] {
+        min-height: 100svh !important;
+        overflow: hidden !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .app {
+        height: 100svh !important;
+        min-height: 100svh !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .layout {
+        width: 100vw !important;
+        max-width: 480px !important;
+        height: 100svh !important;
+        aspect-ratio: auto !important;
+        min-height: 0 !important;
+        margin: 0 auto !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .panel.main,
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area,
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card {
+        height: 100svh !important;
+        min-height: 100svh !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .panel.main,
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area {
+        background: #d9efdc !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card {
+        border-radius: 0 !important;
+        background-position: center top !important;
+        height: calc(100svh + 6px) !important;
+        min-height: calc(100svh + 6px) !important;
+        margin-top: -3px !important;
+        transform: translate3d(0, 0, 0) !important;
+        contain: layout paint !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card::before {
+        inset: -4px 0 0 0 !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card .game-kicker {
+        top: 14px !important;
+        font-size: 19px !important;
+        left: 50% !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card .game-progress-line {
+        top: 44px !important;
+        width: 150px !important;
+        height: 6px !important;
+        left: 50% !important;
+        background: rgba(255,255,255,.72) !important;
+        box-shadow: none !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-candidate-pill {
+        display: block !important;
+        right: 12px !important;
+        top: 12px !important;
+        font-size: 11px !important;
+        padding: 6px 9px !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-card {
+        display: none !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .candidate-game-back {
+        left: 18px !important;
+        bottom: 112px !important;
+        font-size: 16px !important;
+        padding: 7px 11px !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-question-panel {
+        top: 60px !important;
+        width: calc(100% - 24px) !important;
+        padding: 14px 14px 13px !important;
+        border-radius: 18px !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .options {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-title {
+        font-size: 22px !important;
+        margin-bottom: 10px !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .option {
+        min-height: 50px !important;
+        padding: 8px 14px !important;
+        font-size: 16px !important;
+        grid-template-columns: 32px 1fr !important;
+        column-gap: 20px !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .letter {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 16px !important;
+        margin-right: 0 !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-runner-img {
+        width: 132px !important;
+        height: 132px !important;
+        bottom: 136px !important;
+        will-change: left, transform !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-choice-layer {
+        bottom: 40px !important;
+        width: min(88%, 430px) !important;
+      }
+      body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-choice {
+        width: 58px !important;
+        height: 58px !important;
+        font-size: 24px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="candidate-intro" id="candidateIntro">
+      <div class="intro-card">
+        <div class="intro-header">
+          <img class="intro-logo" src="talent_tool_assets/m2_game_logo.png" alt="M2 GAME">
+        </div>
+        <div class="intro-visual">
+          <img src="talent_tool_assets/candidate_intro_platform_fast.webp" alt="" loading="eager" fetchpriority="high" decoding="async">
+        </div>
+        <div class="intro-copy">
+          <h1 class="intro-title">灵相测评</h1>
+          <p class="intro-subtitle">请填写姓名后开始测评。完成全部题目后，系统会生成你的专属灵相报告。</p>
+        </div>
+        <div class="intro-form">
+          <div class="intro-field">
+            <label for="introName">姓名</label>
+            <input id="introName" autocomplete="name" placeholder="请输入你的姓名">
+          </div>
+          <button class="intro-start" id="introStart" type="button">开始测评</button>
+          <div class="intro-error" id="introError" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+    <div class="floating-tabs" aria-label="页面切换">
+      <button class="floating-tab active" data-view="answer" type="button">答题</button>
+      <button class="floating-tab" data-view="candidate" type="button">候选人</button>
+      <button class="floating-tab" data-view="hr" type="button">HR</button>
+      <button class="floating-tab" data-action="print" type="button">打印</button>
+    </div>
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">HR</div>
+        <div>
+          <h1>游戏公司 HR 人才测评工具</h1>
+          <p class="subtitle">基于 60 题职业倾向测评，自动生成候选人画像、岗位适配、面试追问与培养建议。</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="sampleBtn" type="button">填入演示答案</button>
+        <button class="btn" id="resetBtn" type="button">清空</button>
+        <button class="btn primary" id="printBtn" type="button">打印当前报告</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel side">
+        <div class="field">
+          <label for="candidateName">候选人姓名</label>
+          <input id="candidateName" placeholder="例如：李想">
+        </div>
+        <div class="field">
+          <label for="candidateRole">目标岗位</label>
+          <input id="candidateRole" placeholder="例如：招聘 HR / HRBP">
+        </div>
+        <div class="field">
+          <label for="candidateYears">工作年限</label>
+          <input id="candidateYears" placeholder="例如：3 年">
+        </div>
+        <div class="field">
+          <label for="assessmentDate">测评日期</label>
+          <input id="assessmentDate" type="date">
+        </div>
+        <div class="field">
+          <label for="openAnswer">开放题补充</label>
+          <textarea id="openAnswer" placeholder="可记录候选人对游戏公司 HR 价值、优势与待提升点的回答。"></textarea>
+        </div>
+        <div class="progress-meta"><span id="progressText">准备开始</span><span id="answerCount">0/60</span></div>
+        <div class="progress"><span id="progressBar"></span></div>
+        <div class="tabs">
+          <button class="tab active" data-view="answer" type="button">答题</button>
+          <button class="tab" data-view="candidate" type="button">候选人</button>
+          <button class="tab" data-view="hr" type="button">HR</button>
+        </div>
+        <p class="notice">候选人界面用于反馈与体验，HR 界面用于内部判断。HR 报告不建议直接展示给候选人。</p>
+      </aside>
+
+      <section class="panel main">
+        <div class="toolbar">
+          <div>
+            <div class="section-kicker" id="questionMeta">加载题库中</div>
+            <div class="subtitle" id="sectionHint">跟随直觉完成每一道选择。</div>
+          </div>
+          <select id="jumpSelect" aria-label="跳转题目"></select>
+        </div>
+        <section class="question-area" id="answerView">
+          <article class="game-card">
+            <div class="candidate-game-name" id="candidateGameName">候选人：-</div>
+            <button class="candidate-game-back" id="candidateBackBtn" type="button">返回上一题</button>
+            <div class="game-head">
+              <div>
+                <div class="game-kicker">灵相测评</div>
+                <div class="game-progress-line"><span id="gameProgress"></span></div>
+              </div>
+              <div class="game-candidate-pill" id="gameCandidate">候选人：-</div>
+            </div>
+
+            <div class="game-question-panel">
+              <div class="game-meta-row">
+                <span id="gameQuestionNo">第 1 题</span>
+                <span id="gameChapter">启程关卡</span>
+              </div>
+              <h2 class="question-title" id="questionTitle">正在加载题库...</h2>
+              <div class="options" id="options"></div>
+            </div>
+
+            <section class="level-scene stage-1" id="levelScene" aria-hidden="true">
+              <div class="scene-card" id="sceneCard">第 1 题<small>进入当前关卡</small></div>
+              <img class="scene-runner-img" id="sceneRunnerImg" src="talent_tool_assets/spirit_fox_fast.webp" alt="">
+              <div class="scene-flag"></div>
+              <div class="scene-gate"><span id="sceneGate">01</span></div>
+              <div class="scene-choice-layer" id="sceneChoices"></div>
+            </section>
+          </article>
+        </section>
+        <section class="report" id="reportView"></section>
+        <div class="nav">
+          <button class="btn" id="prevBtn" type="button">上一题</button>
+          <button class="btn primary" id="nextBtn" type="button">下一题</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const EMBEDDED_QUESTIONS = [
+      {
+            "number": 1,
+            "type": "choice",
+            "title": "小时候玩拼图或乐高,你更享受哪个环节?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "按照图纸一步步搭建"
+                  },
+                  {
+                        "key": "B",
+                        "text": "自由发挥,拼出自己的创意造型"
+                  },
+                  {
+                        "key": "C",
+                        "text": "和兄弟姐妹或同学朋友分工合作完成"
+                  },
+                  {
+                        "key": "D",
+                        "text": "拼完后拆掉重新挑战更难的"
+                  }
+            ]
+      },
+      {
+            "number": 2,
+            "type": "choice",
+            "title": "上学的时候,你在班级里,是怎样的存在?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "喜欢出主意、带节奏的人"
+                  },
+                  {
+                        "key": "B",
+                        "text": "愿意倾听、乐于助人的人"
+                  },
+                  {
+                        "key": "C",
+                        "text": "做事认真、靠谱可信的人"
+                  },
+                  {
+                        "key": "D",
+                        "text": "组织协调、张罗事务的人"
+                  }
+            ]
+      },
+      {
+            "number": 3,
+            "type": "choice",
+            "title": "你整理书包/书桌或办公桌的频率是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "每天都会整理,保持整洁"
+                  },
+                  {
+                        "key": "B",
+                        "text": "乱到受不了才整理一次"
+                  },
+                  {
+                        "key": "C",
+                        "text": "每周固定时间整理"
+                  },
+                  {
+                        "key": "D",
+                        "text": "东西有固定位置,用完归位"
+                  }
+            ]
+      },
+      {
+            "number": 4,
+            "type": "choice",
+            "title": "同学向你倾诉秘密时,你通常?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "帮他分析问题,给出建议"
+                  },
+                  {
+                        "key": "B",
+                        "text": "守口如瓶,但不会主动追问"
+                  },
+                  {
+                        "key": "C",
+                        "text": "分享自己类似经历来安慰他"
+                  },
+                  {
+                        "key": "D",
+                        "text": "引导他向老师或家长求助"
+                  }
+            ]
+      },
+      {
+            "number": 5,
+            "type": "choice",
+            "title": "小时候遇到数学难题,你会?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "自己反复琢磨,直到解出"
+                  },
+                  {
+                        "key": "B",
+                        "text": "问同学或老师,快速得到方法"
+                  },
+                  {
+                        "key": "C",
+                        "text": "先跳过,做别的题再回来想"
+                  },
+                  {
+                        "key": "D",
+                        "text": "看答案,理解解题思路"
+                  }
+            ]
+      },
+      {
+            "number": 6,
+            "type": "choice",
+            "title": "你更愿意和哪种性格的同学做同桌?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "安静、不打扰我的"
+                  },
+                  {
+                        "key": "B",
+                        "text": "幽默、能聊得来的"
+                  },
+                  {
+                        "key": "C",
+                        "text": "认真、能互相督促学习的"
+                  },
+                  {
+                        "key": "D",
+                        "text": "热心、愿意借笔记给我的"
+                  }
+            ]
+      },
+      {
+            "number": 7,
+            "type": "choice",
+            "title": "你小时候拆过闹钟、收音机之类的物品吗?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "拆过,还能装回去"
+                  },
+                  {
+                        "key": "B",
+                        "text": "拆过,但装不回去"
+                  },
+                  {
+                        "key": "C",
+                        "text": "没拆过,怕弄坏"
+                  },
+                  {
+                        "key": "D",
+                        "text": "没想过,觉得没必要"
+                  }
+            ]
+      },
+      {
+            "number": 8,
+            "type": "choice",
+            "title": "你对自己小时候的性格描述更接近?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "安静、喜欢独处"
+                  },
+                  {
+                        "key": "B",
+                        "text": "活泼、朋友多"
+                  },
+                  {
+                        "key": "C",
+                        "text": "细心、做事有条理"
+                  },
+                  {
+                        "key": "D",
+                        "text": "好胜、不服输"
+                  }
+            ]
+      },
+      {
+            "number": 9,
+            "type": "choice",
+            "title": "你对自己“自驱力”的评价更接近:",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "我喜欢有明确目标,为了完成目标愿意主动想办法"
+                  },
+                  {
+                        "key": "B",
+                        "text": "我喜欢按部就班,把分配给我的事情做到极致"
+                  },
+                  {
+                        "key": "C",
+                        "text": "我喜欢探索新的方法,哪怕没人要求我也会尝试优化"
+                  },
+                  {
+                        "key": "D",
+                        "text": "我喜欢被需要的感觉,别人找我帮忙我会很有动力"
+                  }
+            ]
+      },
+      {
+            "number": 10,
+            "type": "choice",
+            "title": "在上一个团队中,你最常被同事评价为?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "靠谱,交代的事一定能完成"
+                  },
+                  {
+                        "key": "B",
+                        "text": "有想法,总能提出新点子"
+                  },
+                  {
+                        "key": "C",
+                        "text": "好沟通,大家都愿意和你合作"
+                  },
+                  {
+                        "key": "D",
+                        "text": "行动快,事情推进效率高"
+                  }
+            ]
+      },
+      {
+            "number": 11,
+            "type": "choice",
+            "title": "小组讨论中,如果大家意见分歧,你往往会?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "提出一个折中方案让双方接受"
+                  },
+                  {
+                        "key": "B",
+                        "text": "坚持自己认为对的,说服别人"
+                  },
+                  {
+                        "key": "C",
+                        "text": "倾听各方后投票决定"
+                  },
+                  {
+                        "key": "D",
+                        "text": "转移话题,缓和气氛"
+                  }
+            ]
+      },
+      {
+            "number": 12,
+            "type": "choice",
+            "title": "当工作压力很大时,你通常会?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "更专注、更有战斗力"
+                  },
+                  {
+                        "key": "B",
+                        "text": "需要找人聊聊、释放情绪"
+                  },
+                  {
+                        "key": "C",
+                        "text": "列优先级,按计划逐步完成"
+                  },
+                  {
+                        "key": "D",
+                        "text": "先冷静分析压力源,再找对策"
+                  }
+            ]
+      },
+      {
+            "number": 13,
+            "type": "choice",
+            "title": "项目进度落后时,你通常会?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "主动加班赶工,确保按时交付"
+                  },
+                  {
+                        "key": "B",
+                        "text": "重新评估剩余工作,调整计划"
+                  },
+                  {
+                        "key": "C",
+                        "text": "向领导申请更多资源或时间"
+                  },
+                  {
+                        "key": "D",
+                        "text": "优化工作方法,提高效率"
+                  }
+            ]
+      },
+      {
+            "number": 14,
+            "type": "choice",
+            "title": "在处理大量数据时,你的状态是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "数据太多会烦躁,希望有人帮忙"
+                  },
+                  {
+                        "key": "B",
+                        "text": "能处理,但更喜欢有人交流讨论"
+                  },
+                  {
+                        "key": "C",
+                        "text": "很专注,享受发现规律的过程"
+                  },
+                  {
+                        "key": "D",
+                        "text": "设计一个逻辑框架再整理,有条不紊"
+                  }
+            ]
+      },
+      {
+            "number": 15,
+            "type": "choice",
+            "title": "你觉得自己做决策更多靠?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "直觉和冲动"
+                  },
+                  {
+                        "key": "B",
+                        "text": "情感和价值观"
+                  },
+                  {
+                        "key": "C",
+                        "text": "逻辑和事实"
+                  },
+                  {
+                        "key": "D",
+                        "text": "经验和惯例"
+                  }
+            ]
+      },
+      {
+            "number": 16,
+            "type": "choice",
+            "title": "回顾过去,你曾经发现流程有更好的改进方法时,你是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "直接按新方法做,有效再推广"
+                  },
+                  {
+                        "key": "B",
+                        "text": "写建议报告提交给领导"
+                  },
+                  {
+                        "key": "C",
+                        "text": "私下和负责同事沟通"
+                  },
+                  {
+                        "key": "D",
+                        "text": "在团队会议上提出来讨论"
+                  }
+            ]
+      },
+      {
+            "number": 17,
+            "type": "choice",
+            "title": "你更享受哪种类型的表扬?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "“这次做得又快又好”"
+                  },
+                  {
+                        "key": "B",
+                        "text": "“想出了一个大家都没想到的办法”"
+                  },
+                  {
+                        "key": "C",
+                        "text": "“团队因为你更团结了”"
+                  },
+                  {
+                        "key": "D",
+                        "text": "“数据一点错都没有”"
+                  }
+            ]
+      },
+      {
+            "number": 18,
+            "type": "choice",
+            "title": "你更享受被怎样表扬?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "“你搞定了一个很难搞的人/谈下了一个重要机会”"
+                  },
+                  {
+                        "key": "B",
+                        "text": "“你让团队氛围变好了,大家都愿意和你合作”"
+                  },
+                  {
+                        "key": "C",
+                        "text": "“你的分析报告完全没出错,逻辑清晰”"
+                  },
+                  {
+                        "key": "D",
+                        "text": "“你把流程理得特别顺,效率提高了”"
+                  }
+            ]
+      },
+      {
+            "number": 19,
+            "type": "choice",
+            "title": "面对一个全新的任务,你的第一步通常是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "搜索参考案例,了解常规做法"
+                  },
+                  {
+                        "key": "B",
+                        "text": "拆解目标,列出关键节点"
+                  },
+                  {
+                        "key": "C",
+                        "text": "找有经验的人请教要点"
+                  },
+                  {
+                        "key": "D",
+                        "text": "直接动手试,边做边改"
+                  }
+            ]
+      },
+      {
+            "number": 20,
+            "type": "choice",
+            "title": "你对工作文档(如SOP、制度)的态度是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "必须详细、无歧义,否则会不安"
+                  },
+                  {
+                        "key": "B",
+                        "text": "大致明确即可,细节可灵活"
+                  },
+                  {
+                        "key": "C",
+                        "text": "写出来很重要,但执行看情况"
+                  },
+                  {
+                        "key": "D",
+                        "text": "不喜欢写文档,口头沟通更快"
+                  }
+            ]
+      },
+      {
+            "number": 21,
+            "type": "choice",
+            "title": "过去工作中,你和同事意见不合时,你更倾向于?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "用事实和数据说服对方"
+                  },
+                  {
+                        "key": "B",
+                        "text": "找上级或第三方裁判"
+                  },
+                  {
+                        "key": "C",
+                        "text": "各退一步,寻求折中"
+                  },
+                  {
+                        "key": "D",
+                        "text": "坚持己见,但保留合作"
+                  }
+            ]
+      },
+      {
+            "number": 22,
+            "type": "choice",
+            "title": "你认为自己最突出的工作习惯是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "计划性强,每天列待办清单"
+                  },
+                  {
+                        "key": "B",
+                        "text": "适应性强,随时调整优先级"
+                  },
+                  {
+                        "key": "C",
+                        "text": "协作性强,乐于分享信息"
+                  },
+                  {
+                        "key": "D",
+                        "text": "执行性强,不拖延"
+                  }
+            ]
+      },
+      {
+            "number": 23,
+            "type": "choice",
+            "title": "你对“加班”的看法更接近?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "可以接受,只要项目需要"
+                  },
+                  {
+                        "key": "B",
+                        "text": "尽量避免,提高白天效率"
+                  },
+                  {
+                        "key": "C",
+                        "text": "看情况,紧急任务可以"
+                  },
+                  {
+                        "key": "D",
+                        "text": "不喜欢,影响生活平衡"
+                  }
+            ]
+      },
+      {
+            "number": 24,
+            "type": "choice",
+            "title": "你更擅长处理以下哪种问题?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "需要深度分析、逻辑推导的"
+                  },
+                  {
+                        "key": "B",
+                        "text": "需要快速反应、当场决策的"
+                  },
+                  {
+                        "key": "C",
+                        "text": "需要多方协调、沟通斡旋的"
+                  },
+                  {
+                        "key": "D",
+                        "text": "需要耐心细致、反复核验的"
+                  }
+            ]
+      },
+      {
+            "number": 25,
+            "type": "choice",
+            "title": "你对“失败”的态度是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "复盘原因,避免再犯"
+                  },
+                  {
+                        "key": "B",
+                        "text": "总结经验,下次改进"
+                  },
+                  {
+                        "key": "C",
+                        "text": "不太纠结,向前看"
+                  },
+                  {
+                        "key": "D",
+                        "text": "觉得是成长必经之路"
+                  }
+            ]
+      },
+      {
+            "number": 26,
+            "type": "choice",
+            "title": "你更希望领导如何管理你?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "给明确目标和期限,过程少干预"
+                  },
+                  {
+                        "key": "B",
+                        "text": "定期沟通进度,及时反馈"
+                  },
+                  {
+                        "key": "C",
+                        "text": "提供资源支持,困难时帮忙"
+                  },
+                  {
+                        "key": "D",
+                        "text": "放手让我做,信任我的判断"
+                  }
+            ]
+      },
+      {
+            "number": 27,
+            "type": "choice",
+            "title": "你认为自己在团队中更能补充哪种空缺?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "创意和灵感"
+                  },
+                  {
+                        "key": "B",
+                        "text": "细节和执行"
+                  },
+                  {
+                        "key": "C",
+                        "text": "凝聚和氛围"
+                  },
+                  {
+                        "key": "D",
+                        "text": "推动和鞭策"
+                  }
+            ]
+      },
+      {
+            "number": 28,
+            "type": "choice",
+            "title": "你对“流程优化”的兴趣程度是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "很喜欢,经常思考如何更高效"
+                  },
+                  {
+                        "key": "B",
+                        "text": "一般,有需要才做"
+                  },
+                  {
+                        "key": "C",
+                        "text": "不太主动,但愿意配合"
+                  },
+                  {
+                        "key": "D",
+                        "text": "无所谓,按现有流程做"
+                  }
+            ]
+      },
+      {
+            "number": 29,
+            "type": "choice",
+            "title": "当你需要向他人解释复杂概念时,你倾向于?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "画图、列步骤,结构化讲解"
+                  },
+                  {
+                        "key": "B",
+                        "text": "举例子、打比方,生动易懂"
+                  },
+                  {
+                        "key": "C",
+                        "text": "先确认对方理解程度,再调整"
+                  },
+                  {
+                        "key": "D",
+                        "text": "给资料让对方自己看"
+                  }
+            ]
+      },
+      {
+            "number": 30,
+            "type": "choice",
+            "title": "你认为自己最大的职业优势是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "责任心强,从不掉链子"
+                  },
+                  {
+                        "key": "B",
+                        "text": "学习能力强,新东西上手快"
+                  },
+                  {
+                        "key": "C",
+                        "text": "人缘好,能和不同人合作"
+                  },
+                  {
+                        "key": "D",
+                        "text": "抗压能力强,紧急情况不慌"
+                  }
+            ]
+      },
+      {
+            "number": 31,
+            "type": "choice",
+            "title": "对于计划和时间安排,你的习惯是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "有个大方向就行,不喜欢被框死"
+                  },
+                  {
+                        "key": "B",
+                        "text": "会大概规划一下,但灵活调整"
+                  },
+                  {
+                        "key": "C",
+                        "text": "详细列计划,严格按照节点执行"
+                  },
+                  {
+                        "key": "D",
+                        "text": "有一套自己的优先级管理方法"
+                  }
+            ]
+      },
+      {
+            "number": 32,
+            "type": "choice",
+            "title": "如果让你用一天时间了解公司整体业务和各部门运作,你更倾向于:",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "看业务数据和财务报告,自己分析关键指标"
+                  },
+                  {
+                        "key": "B",
+                        "text": "去各岗位跟岗半天,观察他们实际做什么"
+                  },
+                  {
+                        "key": "C",
+                        "text": "和部门负责人访谈,问他们的挑战和需求"
+                  },
+                  {
+                        "key": "D",
+                        "text": "查阅流程文档和组织架构图,梳理逻辑"
+                  }
+            ]
+      },
+      {
+            "number": 33,
+            "type": "choice",
+            "title": "公司想引入一套新的HR系统,你最可能主动承担的见色是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "需求调研和供应商对接"
+                  },
+                  {
+                        "key": "B",
+                        "text": "数据迁移和系统测试"
+                  },
+                  {
+                        "key": "C",
+                        "text": "用户培训和操作手册编写"
+                  },
+                  {
+                        "key": "D",
+                        "text": "推广落地,说服各部门使用"
+                  }
+            ]
+      },
+      {
+            "number": 34,
+            "type": "choice",
+            "title": "当你完成一项工作时,哪种成就感最让你满足?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "成功说服一个优秀人才加入公司"
+                  },
+                  {
+                        "key": "B",
+                        "text": "帮助一位同事解决了困扰他很久的工作难题"
+                  },
+                  {
+                        "key": "C",
+                        "text": "发现了一组数据背后的异常规律,避免了错误"
+                  },
+                  {
+                        "key": "D",
+                        "text": "把一个混乱的流程整理得井井有条,大家用起来都说好"
+                  }
+            ]
+      },
+      {
+            "number": 35,
+            "type": "choice",
+            "title": "工作中你更害怕遇到什么情况?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "目标不明确、没有挑战"
+                  },
+                  {
+                        "key": "B",
+                        "text": "人际关系僵硬、沟通不畅"
+                  },
+                  {
+                        "key": "C",
+                        "text": "流程混乱、权责不清"
+                  },
+                  {
+                        "key": "D",
+                        "text": "计划被打乱、任务频繁变动"
+                  }
+            ]
+      },
+      {
+            "number": 36,
+            "type": "choice",
+            "title": "如果让你设计一个员工满意度调查问卷,你会先?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "参考行业标准模板"
+                  },
+                  {
+                        "key": "B",
+                        "text": "访谈不同岗位员工,了解痛点"
+                  },
+                  {
+                        "key": "C",
+                        "text": "围绕公司当前战略重点设题"
+                  },
+                  {
+                        "key": "D",
+                        "text": "确保问题清晰、无歧义,易统计"
+                  }
+            ]
+      },
+      {
+            "number": 37,
+            "type": "choice",
+            "title": "你更可能因为什么原因主动学习一个新技能?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "工作需要,不学无法完成任务"
+                  },
+                  {
+                        "key": "B",
+                        "text": "个人兴趣,觉得有用或好玩"
+                  },
+                  {
+                        "key": "C",
+                        "text": "同事都在学,不想落后"
+                  },
+                  {
+                        "key": "D",
+                        "text": "领导建议或要求"
+                  }
+            ]
+      },
+      {
+            "number": 38,
+            "type": "choice",
+            "title": "你个人更欣赏哪种?格的领导者?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "目标清晰、决策果断"
+                  },
+                  {
+                        "key": "B",
+                        "text": "以人为本、关心下属"
+                  },
+                  {
+                        "key": "C",
+                        "text": "专业过硬、逻辑严谨"
+                  },
+                  {
+                        "key": "D",
+                        "text": "开放包容、鼓励创新"
+                  }
+            ]
+      },
+      {
+            "number": 39,
+            "type": "choice",
+            "title": "被分配到一个自己不熟悉的任务时,你通常?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "先自己摸索,搞定了很有成就感"
+                  },
+                  {
+                        "key": "B",
+                        "text": "找人请教,觉得有人带着更安心"
+                  },
+                  {
+                        "key": "C",
+                        "text": "查资料、看教程,系统学一遍再下手"
+                  },
+                  {
+                        "key": "D",
+                        "text": "按已有步骤操作,确保不出错"
+                  }
+            ]
+      },
+      {
+            "number": 40,
+            "type": "choice",
+            "title": "你对“数据分析在HR中的应用”的态度是?",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常重要,应作为决策依据"
+                  },
+                  {
+                        "key": "B",
+                        "text": "有一定参考价值,但不能唯数据论"
+                  },
+                  {
+                        "key": "C",
+                        "text": "目前作用有限,还是看人"
+                  },
+                  {
+                        "key": "D",
+                        "text": "不太了解,需要学习"
+                  }
+            ]
+      },
+      {
+            "number": 41,
+            "type": "likert",
+            "title": "我容易成为聚会的灵魂人物。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 42,
+            "type": "likert",
+            "title": "我倾向于挑剔别人的缺点。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 43,
+            "type": "likert",
+            "title": "我会把事情做得彻底、有条理。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 44,
+            "type": "likert",
+            "title": "我容易沮丧、情绪低落。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 45,
+            "type": "likert",
+            "title": "我有丰富的想象力。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 46,
+            "type": "likert",
+            "title": "我是一个比较安静的人。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 47,
+            "type": "likert",
+            "title": "我是一个值得信赖的人。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 48,
+            "type": "likert",
+            "title": "我有时会有点懒散。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 49,
+            "type": "likert",
+            "title": "即使处于压力下,我也能保持镇定。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 50,
+            "type": "likert",
+            "title": "我对许多不同的领域都有好奇心。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 51,
+            "type": "likert",
+            "title": "我喜欢团队合作胜过单独工作。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 52,
+            "type": "likert",
+            "title": "我会严格按照计划行事。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 53,
+            "type": "likert",
+            "title": "我容易紧张。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 54,
+            "type": "likert",
+            "title": "我喜欢学习新的工作方法。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 55,
+            "type": "likert",
+            "title": "我能迅速与人建立联系。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 56,
+            "type": "likert",
+            "title": "我会主动帮助同事解决困难。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 57,
+            "type": "likert",
+            "title": "我做事很少拖延。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 58,
+            "type": "likert",
+            "title": "我能冷静地处理突发事件。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 59,
+            "type": "likert",
+            "title": "我喜欢探索新的兴趣爱好。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      },
+      {
+            "number": 60,
+            "type": "likert",
+            "title": "我相信大多数人是善意的。",
+            "options": [
+                  {
+                        "key": "A",
+                        "text": "非常同意"
+                  },
+                  {
+                        "key": "B",
+                        "text": "比较同意"
+                  },
+                  {
+                        "key": "C",
+                        "text": "一般"
+                  },
+                  {
+                        "key": "D",
+                        "text": "比较不同意"
+                  },
+                  {
+                        "key": "E",
+                        "text": "非常不同意"
+                  }
+            ]
+      }
+];
+    const TRAIT_MAPS = [
+      ["owl","peacock","koala","tiger"], ["tiger","koala","owl","peacock"], ["owl","peacock","koala","owl"],
+      ["tiger","owl","peacock","koala"], ["owl","peacock","koala","tiger"], ["owl","peacock","tiger","koala"],
+      ["owl","peacock","koala","tiger"], ["owl","peacock","koala","tiger"], ["tiger","owl","peacock","koala"],
+      ["owl","peacock","koala","tiger"], ["koala","tiger","owl","peacock"], ["tiger","peacock","koala","owl"],
+      ["tiger","owl","koala","peacock"], ["peacock","koala","owl","tiger"], ["tiger","koala","owl","peacock"],
+      ["tiger","owl","koala","peacock"], ["tiger","peacock","koala","owl"], ["tiger","koala","owl","peacock"],
+      ["owl","tiger","koala","peacock"], ["owl","koala","tiger","peacock"], ["owl","tiger","koala","peacock"],
+      ["owl","peacock","koala","tiger"], ["tiger","owl","koala","peacock"], ["owl","tiger","peacock","koala"],
+      ["owl","koala","peacock","tiger"], ["tiger","koala","peacock","owl"], ["peacock","owl","koala","tiger"],
+      ["tiger","peacock","koala","owl"], ["owl","peacock","koala","tiger"], ["owl","peacock","koala","tiger"],
+      ["peacock","koala","owl","tiger"], ["owl","koala","peacock","tiger"], ["tiger","owl","koala","peacock"],
+      ["tiger","koala","owl","peacock"], ["tiger","koala","owl","peacock"], ["owl","koala","tiger","peacock"],
+      ["owl","peacock","koala","tiger"], ["tiger","koala","owl","peacock"], ["tiger","koala","peacock","owl"],
+      ["owl","tiger","koala","peacock"]
+    ];
+    const CHOICE_KEYS = ["A", "B", "C", "D", "E"];
+    const LIKERT_OPTIONS = [
+      { key: "A", text: "非常同意" },
+      { key: "B", text: "比较同意" },
+      { key: "C", text: "一般" },
+      { key: "D", text: "比较不同意" },
+      { key: "E", text: "非常不同意" }
+    ];
+    const traitNames = {
+      tiger: "白虎 - 目标驱动",
+      peacock: "朱雀 - 热情沟通",
+      koala: "玄武 - 耐心支持",
+      owl: "青龙 - 逻辑严谨",
+      chameleon: "幻化型 - 综合适应"
+    };
+    const hrTraitNames = {
+      tiger: "老虎型 - 目标驱动",
+      peacock: "孔雀型 - 热情沟通",
+      koala: "考拉型 - 耐心支持",
+      owl: "猫头鹰型 - 逻辑严谨",
+      chameleon: "变色龙型 - 综合适应"
+    };
+    const hrProfileTitles = {
+      tiger: "老虎型",
+      peacock: "孔雀型",
+      koala: "考拉型",
+      owl: "猫头鹰型",
+      chameleon: "变色龙型"
+    };
+    const bigFiveNames = {
+      extraversion: "外向性",
+      agreeableness: "宜人性",
+      conscientiousness: "尽责性",
+      emotionalStability: "情绪稳定性",
+      openness: "开放性"
+    };
+    const profiles = {
+      tiger: {
+        title: "白虎",
+        short: "目标清晰、行动快、愿意推进困难议题。",
+        fit: ["招聘攻坚", "HRBP 业务推动", "绩效落地", "高压项目协调"],
+        strengths: ["目标感强，能快速拆解问题并推动结果", "面对阻力时更愿意主动沟通和争取资源", "适合节奏快、结果导向明确的 HR 场景"],
+        risks: ["压力下可能忽略候选人体验、团队感受或流程细节", "需要验证其在强推进之外的倾听、复盘和边界感"],
+        interview: ["请复盘一次你在短时间内推动招聘或组织项目落地的经历。阻力是什么，你如何争取资源？", "当业务负责人不断改变需求时，你如何守住优先级并维护协作关系？", "讲一个你推进过快导致返工或沟通误解的案例，后来怎么调整？"],
+        develop: ["给明确目标、授权边界和量化指标，同时设置候选人体验与合规检查点。"]
+      },
+      peacock: {
+        title: "朱雀",
+        short: "表达力强、善于连接人，能调动氛围和建立合作。",
+        fit: ["培训与文化", "雇主品牌", "员工关系", "招聘沟通"],
+        strengths: ["沟通主动，容易与候选人、员工和业务方建立连接", "适合需要表达、宣导、氛围调动和关系经营的任务", "能把抽象信息转成更容易被接受的表达"],
+        risks: ["可能对细节闭环和长期跟进耐心不足", "需要验证其数据复盘、文档规范和承诺兑现能力"],
+        interview: ["请展示一个你做过的培训、文化或员工沟通项目，如何衡量效果？", "当活动氛围很好但结果指标不佳时，你会怎么复盘？", "讲一个你需要处理大量细节或重复跟进的项目。"],
+        develop: ["给予表达和影响机会，并配套清单、节点复盘和交付标准。"]
+      },
+      koala: {
+        title: "玄武",
+        short: "温和稳定、协作感强，适合提供耐心支持和服务。",
+        fit: ["员工服务", "SSC", "常规招聘", "劳动关系支持"],
+        strengths: ["稳定、耐心、愿意支持他人，容易获得信任", "适合需要持续服务、细致跟进和关系维护的 HR 模块", "能缓和冲突气氛，保持团队合作"],
+        risks: ["面对强冲突或快速决策时可能犹豫", "需要验证其边界判断、升级机制和结果推动力"],
+        interview: ["请讲一次你处理员工诉求或候选人沟通的经历。如何判断是否升级？", "如果员工情绪激烈但制度边界很明确，你会怎么处理？", "面对重复咨询和高频事务时，你如何保证准确与效率？"],
+        develop: ["适合从服务与运营场景切入，提前明确授权边界、升级路径和处理时限。"]
+      },
+      owl: {
+        title: "青龙",
+        short: "重视规则、数据和准确性，适合复杂信息分析。",
+        fit: ["薪酬绩效", "HR 数据分析", "HRIS", "合规与人力成本"],
+        strengths: ["逻辑严谨，重视事实、规则和数据依据", "适合制度、合规、薪酬绩效、系统和数据相关任务", "能在复杂信息中梳理结构，降低错误率"],
+        risks: ["信息不完整时决策可能偏慢，沟通温度需要补足", "需要验证其向非专业对象解释复杂规则的能力"],
+        interview: ["请解释一个 HR 数据、制度或流程优化案例。你的分析框架是什么？", "当数据不完整但业务要求马上给建议时，你会怎么做？", "如何向业务负责人解释复杂薪酬或绩效规则？"],
+        develop: ["给清晰标准、数据口径和结论时限，鼓励用场景化语言影响业务方。"]
+      },
+      chameleon: {
+        title: "幻化型",
+        short: "风格均衡，能在不同对象、任务和压力之间切换。",
+        fit: ["综合 HRBP", "组织发展", "HR 全盘管理", "HR 主管/经理"],
+        strengths: ["适应性强，能兼顾目标、关系、流程与分析", "适合跨部门协调、综合管理和轮岗培养", "在复杂场景中更容易找到折中方案"],
+        risks: ["可能显得个人锋芒和原则边界不够鲜明", "需要验证其关键优先级和不可妥协原则"],
+        interview: ["请复盘一次你同时协调业务、员工和管理层的案例。", "资源冲突时，你如何排序优先级？", "你在 HR 工作中最不会妥协的原则是什么？"],
+        develop: ["放在综合协调场景中培养，并通过复盘沉淀个人判断原则。"]
+      }
+    };
+    const bigFiveAdvice = {
+      extraversion: ["更愿意主动表达和连接他人，容易在互动中获得能量。", "更偏好安静观察和独立思考，能在少干扰的环境里沉淀想法。"],
+      agreeableness: ["更重视理解、体谅和合作，容易建立温和稳定的人际关系。", "更习惯保持独立判断，面对分歧时会先看原则和事实。"],
+      conscientiousness: ["更重视计划、承诺和完成度，做事通常更有秩序感。", "更需要外部节奏和清晰提醒来帮助自己保持持续推进。"],
+      emotionalStability: ["面对压力时更容易保持平稳，能较快恢复状态。", "对变化和压力更敏感，需要给自己留出整理情绪的空间。"],
+      openness: ["更喜欢探索新想法和新体验，容易从不同信息里获得灵感。", "更偏好熟悉、明确和可预期的方式，做判断时更看重现实经验。"]
+    };
+    const candidateBigFiveAdvice = {
+      extraversion: {
+        summary: "你更容易从交流和行动中获得能量，愿意主动靠近新的人和新的场景。",
+        behavior: "常见表现是表达直接、反应积极、乐于分享想法，也更容易把氛围带动起来。"
+      },
+      agreeableness: {
+        summary: "你在人际互动里更重视善意、理解和配合，容易感受到他人的情绪与需要。",
+        behavior: "常见表现是愿意倾听、愿意帮忙、说话照顾他人感受，也更容易建立稳定的信任关系。"
+      },
+      conscientiousness: {
+        summary: "你做事更讲秩序和承诺，倾向于把任务规划清楚，并尽量把事情完整交付。",
+        behavior: "常见表现是可靠、自律、重视细节和结果，遇到复杂任务时也会努力保持节奏。"
+      },
+      emotionalStability: {
+        summary: "你面对压力时更容易保持稳定，不太会被一时情绪牵着走。",
+        behavior: "常见表现是沉得住气、恢复较快、能在变化中维持判断，也更能给身边人安全感。"
+      },
+      openness: {
+        summary: "你对新鲜想法和不同体验更有好奇心，愿意用新的角度理解问题。",
+        behavior: "常见表现是想象力较强、接受变化、喜欢探索，也更容易从跨领域信息里获得灵感。"
+      }
+    };
+    const spiritRepresentatives = {
+      tiger: "拿破仑、乔布斯、曹操",
+      peacock: "孙中山、克林顿、里根",
+      koala: "甘地、特蕾莎修女、周恩来",
+      owl: "诸葛亮、牛顿、爱因斯坦",
+      chameleon: "达芬奇、富兰克林、曾国藩"
+    };
+    const spiritAssets = {
+      tiger: { name: "白虎", src: "talent_tool_assets/tiger_white_cutout.png" },
+      peacock: { name: "朱雀", src: "talent_tool_assets/phoenix_red_cutout.png" },
+      koala: { name: "玄武", src: "talent_tool_assets/turtle_black_cutout.png" },
+      owl: { name: "青龙", src: "talent_tool_assets/dragon_green_cutout.png" },
+      chameleon: { name: "玄武", src: "talent_tool_assets/turtle_black_cutout.png" }
+    };
+    const questChapters = [
+      { title: "云境启程", range: "1-15" },
+      { title: "灵路协作", range: "16-30" },
+      { title: "心镜判断", range: "31-45" },
+      { title: "星门觉醒", range: "46-60" }
+    ];
+    const answerGuide = { name: "灵狐", src: "talent_tool_assets/spirit_fox_fast.webp" };
+
+    const SYNC_API = `${location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787"}/api/submissions`;
+    const candidateMode = true;
+    if (candidateMode) document.body.dataset.mode = "candidate";
+    if (candidateMode) document.body.dataset.gate = "intro";
+    const state = { questions: [], index: 0, answers: {}, view: "answer", autoTimer: null, submissionId: "", submissionKey: "", submissionStatus: "" };
+    let saveTimer = 0;
+    let answerAnimFrameA = 0;
+    let answerAnimFrameB = 0;
+    let quizAssetsPreloaded = false;
+    const els = {
+      name: document.querySelector("#candidateName"),
+      role: document.querySelector("#candidateRole"),
+      years: document.querySelector("#candidateYears"),
+      date: document.querySelector("#assessmentDate"),
+      open: document.querySelector("#openAnswer"),
+      meta: document.querySelector("#questionMeta"),
+      hint: document.querySelector("#sectionHint"),
+      title: document.querySelector("#questionTitle"),
+      options: document.querySelector("#options"),
+      jump: document.querySelector("#jumpSelect"),
+      progress: document.querySelector("#progressBar"),
+      progressText: document.querySelector("#progressText"),
+      answerCount: document.querySelector("#answerCount"),
+      answerView: document.querySelector("#answerView"),
+      gameProgress: document.querySelector("#gameProgress"),
+      gameCandidate: document.querySelector("#gameCandidate"),
+      candidateGameName: document.querySelector("#candidateGameName"),
+      candidateBack: document.querySelector("#candidateBackBtn"),
+      gameQuestionNo: document.querySelector("#gameQuestionNo"),
+      gameChapter: document.querySelector("#gameChapter"),
+      levelScene: document.querySelector("#levelScene"),
+      sceneCard: document.querySelector("#sceneCard"),
+      sceneGate: document.querySelector("#sceneGate"),
+      sceneChoices: document.querySelector("#sceneChoices"),
+      sceneRunnerImg: document.querySelector("#sceneRunnerImg"),
+      reportView: document.querySelector("#reportView"),
+      prev: document.querySelector("#prevBtn"),
+      next: document.querySelector("#nextBtn"),
+      intro: document.querySelector("#candidateIntro"),
+      introName: document.querySelector("#introName"),
+      introStart: document.querySelector("#introStart"),
+      introError: document.querySelector("#introError"),
+      toast: document.querySelector("#toast")
+    };
+
+    async function init() {
+      try {
+        const response = await fetch("talent-assessment-questions.json");
+        state.questions = await response.json();
+      } catch (error) {
+        state.questions = EMBEDDED_QUESTIONS;
+      }
+      els.date.valueAsDate = new Date();
+      restore();
+      state.index = 0;
+      renderJump();
+      render();
+      bind();
+      if (candidateMode) {
+        if (els.name.value) els.introName.value = els.name.value;
+        document.body.dataset.gate = "intro";
+        setView("answer");
+        setTimeout(() => els.introName.focus(), 80);
+      }
+    }
+
+    function bind() {
+      document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => setView(tab.dataset.view)));
+      document.querySelectorAll(".floating-tab[data-view]").forEach(tab => tab.addEventListener("click", () => setView(tab.dataset.view)));
+      document.querySelector(".floating-tab[data-action='print']").addEventListener("click", () => {
+        if (state.view === "answer") setView("candidate");
+        window.print();
+      });
+      document.querySelector("#sampleBtn").addEventListener("click", fillSample);
+      document.querySelector("#resetBtn").addEventListener("click", resetAll);
+      document.querySelector("#printBtn").addEventListener("click", () => {
+        if (state.view === "answer") setView("candidate");
+        window.print();
+      });
+      els.prev.addEventListener("click", () => { cancelAutoAdvance(); state.index = Math.max(0, state.index - 1); setView("answer"); render(); });
+      els.next.addEventListener("click", () => {
+        goNextQuestion();
+      });
+      els.candidateBack.addEventListener("click", () => {
+        cancelAutoAdvance();
+        state.index = Math.max(0, state.index - 1);
+        setView("answer");
+        render();
+      });
+      els.jump.addEventListener("change", () => { cancelAutoAdvance(); state.index = Number(els.jump.value); setView("answer"); render(); });
+      [els.name, els.role, els.years, els.date, els.open].forEach(input => input.addEventListener("input", scheduleSave));
+      if (candidateMode) {
+        els.introStart.addEventListener("click", startCandidateAssessment);
+        els.introName.addEventListener("focus", preloadQuizAssets, { once: true });
+        window.setTimeout(preloadQuizAssets, 1200);
+        els.introName.addEventListener("keydown", event => {
+          if (event.key === "Enter") startCandidateAssessment();
+        });
+      }
+      window.addEventListener("pagehide", flushSave);
+    }
+
+    function preloadQuizAssets() {
+      if (quizAssetsPreloaded) return;
+      quizAssetsPreloaded = true;
+      [
+        "talent_tool_assets/answer_scene_cloud_realm_fast.webp",
+        answerGuide.src
+      ].forEach(src => {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = src;
+      });
+    }
+
+    function startCandidateAssessment() {
+      const name = els.introName.value.trim();
+      if (!name) {
+        els.introError.textContent = "请先填写姓名";
+        els.introName.focus();
+        return;
+      }
+      els.introError.textContent = "";
+      els.name.value = name;
+      state.answers = {};
+      state.index = 0;
+      state.submissionId = "";
+      state.submissionKey = "";
+      state.submissionStatus = "";
+      localStorage.removeItem("talentAssessmentDraft");
+      flushSave();
+      document.body.dataset.gate = "quiz";
+      setView("answer");
+      render();
+    }
+
+    function goNextQuestion() {
+      cancelAutoAdvance();
+      if (candidateMode) window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      if (state.index < state.questions.length - 1) {
+        state.index += 1;
+        setView("answer");
+      } else {
+        setView("candidate");
+      }
+      render();
+    }
+
+    function cancelAutoAdvance() {
+      if (state.autoTimer) {
+        clearTimeout(state.autoTimer);
+        state.autoTimer = null;
+      }
+    }
+
+    function answerAndAdvance(questionNumber, key) {
+      state.answers[questionNumber] = key;
+      scheduleSave();
+      [els.options, els.sceneChoices].forEach(container => {
+        if (!container) return;
+        container.querySelectorAll(".selected").forEach(item => item.classList.remove("selected"));
+        const selected = container.querySelector(`[data-key="${key}"]`);
+        if (selected) selected.classList.add("selected");
+      });
+      positionRunner(key);
+      updateProgress();
+      if (state.autoTimer) clearTimeout(state.autoTimer);
+      state.autoTimer = setTimeout(() => {
+        state.autoTimer = null;
+        goNextQuestion();
+      }, 450);
+    }
+
+    function renderJump() {
+      els.jump.innerHTML = state.questions.map((q, index) => `<option value="${index}">第 ${q.number} 题</option>`).join("");
+    }
+
+    function setView(view) {
+      if (candidateMode && view === "hr") view = "candidate";
+      document.body.dataset.view = view;
+      if (state.view === view) {
+        els.answerView.style.display = view === "answer" ? "block" : "none";
+        els.reportView.classList.toggle("active", view !== "answer");
+        if (view !== "answer") renderReport();
+        return;
+      }
+      if (view !== "answer") cancelAutoAdvance();
+      state.view = view;
+      document.querySelectorAll(".tab").forEach(tab => tab.classList.toggle("active", tab.dataset.view === view));
+      document.querySelectorAll(".floating-tab[data-view]").forEach(tab => tab.classList.toggle("active", tab.dataset.view === view));
+      els.answerView.style.display = view === "answer" ? "block" : "none";
+      els.reportView.classList.toggle("active", view !== "answer");
+      if (view !== "answer") renderReport();
+    }
+
+    function render() {
+      if (!state.questions.length) return;
+      const question = state.questions[state.index];
+      const options = question.type === "likert" ? LIKERT_OPTIONS : question.options;
+      els.jump.value = String(state.index);
+      els.meta.textContent = question.type === "likert"
+        ? `第 ${question.number} 题 / 心镜探索`
+        : `第 ${question.number} 题 / 灵相探索`;
+      els.hint.textContent = question.number <= 40 ? "请选择最符合第一反应的选项。" : "请选择最符合真实状态的描述。";
+      els.title.textContent = question.title;
+      els.options.innerHTML = options.map(option => `
+        <div class="option ${state.answers[question.number] === option.key ? "selected" : ""}" data-key="${option.key}" style="--i:${options.indexOf(option)}">
+          <span class="letter">${option.key}</span>
+          <span>${escapeHtml(option.text)}</span>
+        </div>
+      `).join("");
+      els.options.querySelectorAll(".option").forEach(item => item.addEventListener("click", () => {
+        answerAndAdvance(question.number, item.dataset.key);
+      }));
+      updateProgress();
+      updateQuestMap(question, options);
+      replayAnswerAnimation();
+      els.prev.disabled = state.index === 0;
+      els.next.textContent = state.index === state.questions.length - 1 ? "查看候选人结果" : "下一题";
+    }
+
+    function updateProgress() {
+      const answered = Object.keys(state.answers).length;
+      const percent = Math.round(answered / state.questions.length * 100);
+      els.progress.style.width = `${percent}%`;
+      els.progressText.textContent = `${percent}% 已完成`;
+      els.answerCount.textContent = `${answered}/${state.questions.length}`;
+    }
+
+    function updateQuestMap(question, options) {
+      const chapterIndex = Math.min(questChapters.length - 1, Math.floor((question.number - 1) / 15));
+      const chapter = questChapters[chapterIndex];
+      const progress = state.questions.length ? ((question.number - 1) / (state.questions.length - 1)) * 100 : 0;
+      els.gameProgress.style.width = `${progress}%`;
+      els.gameCandidate.textContent = `候选人：${els.name.value || "-"}`;
+      if (els.candidateGameName) els.candidateGameName.textContent = `候选人：${els.name.value || "-"}`;
+      if (els.candidateBack) els.candidateBack.disabled = state.index === 0;
+      els.gameQuestionNo.textContent = `第 ${question.number} 题`;
+      els.gameChapter.textContent = `${chapter.title}关卡 · ${chapter.range}题`;
+      els.levelScene.className = `level-scene stage-${chapterIndex + 1}`;
+      els.sceneCard.textContent = `第 ${question.number} 题`;
+      els.sceneGate.textContent = String(question.number).padStart(2, "0");
+      els.sceneRunnerImg.src = answerGuide.src;
+      els.sceneRunnerImg.alt = answerGuide.name;
+      const currentAnswer = state.answers[question.number];
+      els.sceneChoices.innerHTML = options.map((option, index) => {
+        return `<button class="scene-choice ${currentAnswer === option.key ? "selected" : ""}" data-key="${option.key}" type="button">${option.key}</button>`;
+      }).join("");
+      els.sceneChoices.querySelectorAll(".scene-choice").forEach(item => item.addEventListener("click", () => {
+        answerAndAdvance(question.number, item.dataset.key);
+      }));
+      positionRunner(state.answers[question.number]);
+    }
+
+    function replayAnswerAnimation() {
+      if (answerAnimFrameA) cancelAnimationFrame(answerAnimFrameA);
+      if (answerAnimFrameB) cancelAnimationFrame(answerAnimFrameB);
+      els.answerView.classList.remove("answer-animate");
+      answerAnimFrameA = requestAnimationFrame(() => {
+        answerAnimFrameB = requestAnimationFrame(() => {
+          if (state.view === "answer") els.answerView.classList.add("answer-animate");
+          answerAnimFrameA = 0;
+          answerAnimFrameB = 0;
+        });
+      });
+    }
+
+    function positionRunner(key) {
+      const positions = {
+        A: { left: "27%", shift: "-30%" },
+        B: { left: "50%", shift: "0%" },
+        C: { left: "68%", shift: "10%" },
+        D: { left: "79%", shift: "14%" }
+      };
+      const target = positions[key] || positions.B;
+      els.sceneRunnerImg.style.setProperty("--runner-left", target.left);
+      els.sceneRunnerImg.style.setProperty("--runner-shift", target.shift);
+    }
+
+    function calculate() {
+      const traits = { tiger: 0, peacock: 0, koala: 0, owl: 0 };
+      for (let i = 1; i <= 40; i += 1) {
+        const answer = state.answers[i];
+        if (!answer) continue;
+        const optionIndex = CHOICE_KEYS.indexOf(answer);
+        const key = TRAIT_MAPS[i - 1][optionIndex];
+        traits[key] += 1;
+      }
+      const likertScore = q => ({ A: 5, B: 4, C: 3, D: 2, E: 1 }[state.answers[q]] || 0);
+      const reverse = q => likertScore(q) ? 6 - likertScore(q) : 0;
+      const bigFive = {
+        extraversion: likertScore(41) + likertScore(55) + likertScore(60) + reverse(46),
+        agreeableness: likertScore(47) + likertScore(51) + likertScore(56) + reverse(42),
+        conscientiousness: likertScore(43) + likertScore(52) + likertScore(57) + reverse(48),
+        emotionalStability: likertScore(49) + likertScore(58) + reverse(44) + reverse(53),
+        openness: likertScore(45) + likertScore(50) + likertScore(54) + likertScore(59)
+      };
+      const values = Object.values(traits);
+      const sorted = Object.entries(traits).sort((a, b) => b[1] - a[1]);
+      const isBalanced = Math.max(...values) - Math.min(...values) <= 5;
+      const leaders = sorted.filter(item => sorted[0][1] - item[1] <= 2).map(item => item[0]);
+      const primary = isBalanced ? "chameleon" : leaders[0];
+      const completion = Math.round(Object.keys(state.answers).length / 60 * 100);
+      const fit = Math.min(99, Math.round(
+        completion * 0.25 +
+        normalize(bigFive.conscientiousness) * 0.22 +
+        normalize(bigFive.agreeableness) * 0.18 +
+        normalize(bigFive.emotionalStability) * 0.18 +
+        normalize(bigFive.extraversion) * 0.10 +
+        normalize(bigFive.openness) * 0.07
+      ));
+      return { traits, bigFive, primary, leaders, isBalanced, completion, fit };
+    }
+
+    function normalize(score) { return Math.round(score / 20 * 100); }
+    function level(score) { return score >= 15 ? "高" : score >= 11 ? "中" : "低"; }
+
+    function renderReport() {
+      if (!state.questions.length) return;
+      if (state.view === "candidate") {
+        renderCandidateReport();
+        return;
+      }
+      if (state.view === "hr") {
+        renderHrReport();
+        return;
+      }
+    }
+
+    
+    function renderCandidateReport() {
+      const result = calculate();
+      const profile = profiles[result.primary];
+      const spirit = spiritAssets[result.primary] || spiritAssets.chameleon;
+      const topBigFive = Object.entries(result.bigFive).sort((a, b) => b[1] - a[1])[0];
+      const lowBigFive = Object.entries(result.bigFive).sort((a, b) => a[1] - b[1])[0];
+      const traitDesc = result.isBalanced
+        ? "\u98ce\u683c\u5747\u8861\uff0c\u64c5\u957f\u5728\u4e0d\u540c\u5bf9\u8c61\u548c\u76ee\u6807\u4e4b\u95f4\u5207\u6362\uff0c\u9002\u5408\u7efc\u5408\u534f\u8c03\u578b\u5c97\u4f4d\u3002"
+        : profile.short;
+      const bigFiveTone = candidateBigFiveAdvice[topBigFive[0]];
+      const traitCards = [
+        ["peacock", "朱雀", result.traits.peacock],
+        ["tiger", "白虎", result.traits.tiger],
+        ["koala", "玄武", result.traits.koala],
+        ["owl", "青龙", result.traits.owl]
+      ].map(([key, label, value]) => `<div class="${result.primary === key ? "active" : ""}">${label}<strong>${value}</strong></div>`).join("");
+      els.reportView.innerHTML = `
+        <div class="candidate-stage">
+          <article class="phone-report">
+            <div class="candidate-title-row">
+              <div>
+                <h2 class="report-title">灵相报告</h2>
+                <div class="candidate-meta">候选人：${escapeHtml(els.name.value || "-")}</div>
+              </div>
+              <div class="m2-logo"><strong>M2</strong><span>魔兔网络</span></div>
+            </div>
+
+            <section class="candidate-card candidate-hero-card">
+              <div class="spirit-summary">
+                <img src="${spirit.src}" alt="${spirit.name}">
+                <div>
+                  <div class="type-label">本命灵相</div>
+                  <div class="type-main">${profile.title}</div>
+                  <p class="spirit-text">${traitDesc}</p>
+                </div>
+              </div>
+              <div class="trait-score-strip">
+                ${traitCards}
+              </div>
+              <span class="chameleon-line">幻化值：${result.isBalanced ? "已觉醒" : "未觉醒"}</span>
+            </section>
+
+            <h3 class="candidate-section-title">灵相解读</h3>
+            <section class="candidate-card">
+              <div class="candidate-block"><b>个性特点</b><p class="summary">${profile.strengths[0]}</p></div>
+              <div class="candidate-block"><b>优点</b><p class="summary">${profile.strengths[1]}</p></div>
+              <div class="candidate-block"><b>代表人物</b><p class="summary">${spiritRepresentatives[result.primary] || spiritRepresentatives.chameleon}</p></div>
+            </section>
+
+            <h3 class="candidate-section-title">内在属性</h3>
+            <section class="candidate-card">
+              <div class="bigfive-result">
+                <div>
+                  <div class="type-label">结果</div>
+                  <div class="bigfive-name">${bigFiveNames[topBigFive[0]]}</div>
+                </div>
+                <div class="bigfive-score">${topBigFive[1]} / 20 · ${level(topBigFive[1])}</div>
+              </div>
+              <p class="bigfive-tone">${bigFiveTone.summary}</p>
+              <div class="candidate-block"><b>行为表现</b><p class="summary">${bigFiveTone.behavior}</p></div>
+            </section>
+
+            <p class="sync-note" id="candidateSubmitStatus">${escapeHtml(state.submissionStatus || "正在同步测评结果...")}</p>
+            <button class="candidate-retest" type="button">重新测试</button>
+          </article>
+        </div>
+      `;
+      const retest = els.reportView.querySelector(".candidate-retest");
+      if (retest) retest.addEventListener("click", () => setView("answer"));
+      submitCandidateResult(result);
+    }
+
+    function buildSubmissionPayload(result) {
+      if (!state.submissionId) {
+        const safeName = (els.name.value || "candidate").trim().replace(/\s+/g, "-");
+        state.submissionId = `${safeName}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      }
+      return {
+        id: state.submissionId,
+        submittedAt: new Date().toISOString(),
+        info: {
+          name: els.name.value,
+          role: els.role.value,
+          years: els.years.value,
+          date: els.date.value,
+          open: els.open.value
+        },
+        answers: state.answers,
+        result
+      };
+    }
+
+    async function submitCandidateResult(result) {
+      if (!candidateMode || Object.keys(state.answers).length < state.questions.length) {
+        state.submissionStatus = "答题尚未完成，暂不提交。";
+        return;
+      }
+      const payload = buildSubmissionPayload(result);
+      const signature = JSON.stringify({ info: payload.info, answers: payload.answers });
+      if (state.submissionKey === signature && state.submissionStatus === "测评结果已提交给 HR。") return;
+      state.submissionKey = signature;
+      state.submissionStatus = "正在同步测评结果...";
+      updateSubmitStatus();
+      try {
+        const response = await fetch(SYNC_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error("submit failed");
+        const data = await response.json();
+        saveSubmittedRecord(data.submission || payload);
+        state.submissionStatus = "测评结果已提交给 HR。";
+      } catch (error) {
+        state.submissionKey = "";
+        state.submissionStatus = "未连接到同步服务，请联系 HR 确认链接。";
+      }
+      updateSubmitStatus();
+    }
+
+    function saveSubmittedRecord(record) {
+      try {
+        const key = "talentSubmittedRecords";
+        const records = JSON.parse(localStorage.getItem(key) || "[]");
+        const next = [record, ...records.filter(item => item.id !== record.id)].slice(0, 20);
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {}
+    }
+
+    function updateSubmitStatus() {
+      const status = document.querySelector("#candidateSubmitStatus");
+      if (status) status.textContent = state.submissionStatus;
+    }
+
+    function renderHrReport() {
+      const result = calculate();
+      const profile = profiles[result.primary];
+      const topBigFive = Object.entries(result.bigFive).sort((a, b) => b[1] - a[1])[0];
+      const lowBigFive = Object.entries(result.bigFive).sort((a, b) => a[1] - b[1])[0];
+      const hrTitle = hrProfileTitles[result.primary];
+      const traitRows = [
+        ["tiger", "老虎", result.traits.tiger],
+        ["peacock", "孔雀", result.traits.peacock],
+        ["koala", "考拉", result.traits.koala],
+        ["owl", "猫头鹰", result.traits.owl],
+        ["chameleon", "变色龙倾向", result.isBalanced ? 1 : 0]
+      ];
+      els.reportView.innerHTML = `
+        <div class="hr-sheet">
+          <header class="hr-sheet-header">
+            <div class="hr-brand">
+              <div class="hr-logo">M2</div>
+              <div>
+                <div class="hr-brand-small">MOTU TALENT QUEST</div>
+                <h2 class="hr-title">魔兔人才筛选评估工具</h2>
+              </div>
+            </div>
+            <div class="hr-actions">
+              <button class="hr-action" data-hr-action="print" type="button">PRN</button>
+              <button class="hr-action" data-hr-action="pdf" type="button">PDF</button>
+              <button class="hr-action" data-hr-action="xls" type="button">XLS</button>
+            </div>
+          </header>
+
+          <div class="hr-subhead">2. HR界面：候选人测评结果（可以打印或者导出为PDF格式）</div>
+          <div class="hr-report-name">魔兔人才筛选评估报告</div>
+
+          <div class="hr-meta-grid">
+            <div class="hr-meta">候选人：${escapeHtml(els.name.value || "-")}</div>
+            <div class="hr-meta">测评岗位：${escapeHtml(els.role.value || "-")}</div>
+            <div class="hr-meta">报告日期：${escapeHtml(els.date.value || "-")}</div>
+          </div>
+
+          <section class="hr-profile">
+            <div class="hr-profile-kicker">CANDIDATE PROFILE</div>
+            <div class="hr-profile-main">${hrTitle}</div>
+            <div class="hr-profile-sub">主类型：${hrTitle} · ${profiles[result.primary].fit[0] || "HR岗位"}</div>
+          </section>
+
+          <section class="hr-score-strip">
+            ${traitRows.map(([key, label, value]) => `
+              <div class="hr-score-box ${key === "chameleon" ? "highlight" : ""}">
+                <div class="hr-score-label">${label}</div>
+                <div class="hr-score-value">${value}</div>
+              </div>
+            `).join("")}
+          </section>
+
+          <div class="hr-two-col">
+            <div>
+              <section class="hr-panel emphasis">
+                <h3>综合画像</h3>
+                <p><b>主类型：${hrTitle}</b>${result.isBalanced ? "（整合型）" : ""}</p>
+                <p>${profile.short}</p>
+                <p><b>HR 岗位匹配：</b>${profile.fit.join("、")}</p>
+              </section>
+
+              <section class="hr-panel">
+                <h3>大五人格得分</h3>
+                ${Object.entries(result.bigFive).map(([key, value]) => `
+                  <div class="hr-bar-row">
+                    <span>${bigFiveNames[key]}</span>
+                    <div class="hr-bar-track"><div class="hr-bar-fill" style="width:${Math.round(value / 20 * 100)}%"></div></div>
+                    <strong>${value}</strong>
+                  </div>
+                `).join("")}
+              </section>
+            </div>
+
+            <div>
+              <section class="hr-panel">
+                <h3>风险点与建议</h3>
+                <ul>
+                  ${profile.risks.map(item => `<li>${item}</li>`).join("")}
+                  <li>${bigFiveAdvice[lowBigFive[0]][1]}</li>
+                  <li>最高维度：${bigFiveNames[topBigFive[0]]}（${level(topBigFive[1])}）；需验证维度：${bigFiveNames[lowBigFive[0]]}（${level(lowBigFive[1])}）。</li>
+                </ul>
+              </section>
+
+              <section class="hr-panel">
+                <h3>面试验证重点</h3>
+                <ul>${profile.interview.map(item => `<li>${item}</li>`).join("")}</ul>
+              </section>
+            </div>
+          </div>
+
+          <section class="hr-detail">
+            <h3>${hrTitle}</h3>
+            <ul>
+              <li><b>个性特点：</b>${profile.strengths[0]}，${profile.short}</li>
+              <li><b>优点：</b>${profile.strengths[1]}</li>
+              <li><b>不足：</b>${profile.risks[0]}</li>
+              <li><b>HR岗位匹配：</b>${profile.fit.join("、")}</li>
+              <li><b>管理建议：</b>${profile.develop[0]}</li>
+              <li><b>开放题记录：</b>${escapeHtml(els.open.value || "未填写")}</li>
+            </ul>
+          </section>
+        </div>
+      `;
+      els.reportView.querySelectorAll("[data-hr-action]").forEach(button => {
+        button.addEventListener("click", () => {
+          const action = button.dataset.hrAction;
+          if (action === "xls") {
+            downloadHrCsv(result, profile, hrTitle, topBigFive, lowBigFive);
+            return;
+          }
+          window.print();
+        });
+      });
+    }
+
+    function downloadHrCsv(result, profile, hrTitle, topBigFive, lowBigFive) {
+      const rows = [
+        ["字段", "内容"],
+        ["候选人", els.name.value || "-"],
+        ["测评岗位", els.role.value || "-"],
+        ["工作年限", els.years.value || "-"],
+        ["报告日期", els.date.value || "-"],
+        ["主类型", hrTitle],
+        ["岗位适配度", `${result.fit}%`],
+        ["老虎", result.traits.tiger],
+        ["孔雀", result.traits.peacock],
+        ["考拉", result.traits.koala],
+        ["猫头鹰", result.traits.owl],
+        ["变色龙倾向", result.isBalanced ? "是" : "否"],
+        ["外向性", result.bigFive.extraversion],
+        ["宜人性", result.bigFive.agreeableness],
+        ["尽责性", result.bigFive.conscientiousness],
+        ["情绪稳定性", result.bigFive.emotionalStability],
+        ["开放性", result.bigFive.openness],
+        ["最高维度", `${bigFiveNames[topBigFive[0]]}（${level(topBigFive[1])}）`],
+        ["需验证维度", `${bigFiveNames[lowBigFive[0]]}（${level(lowBigFive[1])}）`],
+        ["HR岗位匹配", profile.fit.join("、")],
+        ["风险点", profile.risks.join("；")],
+        ["面试验证重点", profile.interview.join("；")],
+        ["开放题记录", els.open.value || "未填写"]
+      ];
+      const csv = "\ufeff" + rows.map(row => row.map(csvCell).join(",")).join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `HR测评报告-${els.name.value || "候选人"}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function csvCell(value) {
+      return `"${String(value ?? "").replaceAll('"', '""')}"`;
+    }
+
+    function scoreRows(scores, max, names) {
+      return Object.entries(scores).map(([key, value]) => `
+        <div class="score-row">
+          <span>${names[key]}</span>
+          <div class="bar"><span style="width:${Math.round(value / max * 100)}%"></span></div>
+          <strong>${value}</strong>
+        </div>
+      `).join("");
+    }
+
+    function fillSample() {
+      state.questions.forEach((q, index) => {
+        if (q.type === "choice") {
+          const preferred = ["owl", "koala", "peacock", "tiger"][index % 4];
+          const mapped = TRAIT_MAPS[q.number - 1].indexOf(preferred);
+          state.answers[q.number] = CHOICE_KEYS[mapped >= 0 ? mapped : index % 4];
+        } else {
+          state.answers[q.number] = index % 5 <= 1 ? "B" : "A";
+        }
+      });
+      els.name.value = els.name.value || "演示候选人";
+      els.role.value = els.role.value || "游戏公司 HRBP";
+      els.years.value = els.years.value || "3 年";
+      els.open.value = els.open.value || "候选人认为游戏公司 HR 的价值在于理解业务节奏、连接人才供给与团队文化，并用数据和沟通帮助组织持续迭代。";
+      flushSave();
+      render();
+      setView("candidate");
+      showToast("已填入演示答案");
+    }
+
+    function resetAll() {
+      state.answers = {};
+      state.index = 0;
+      state.submissionId = "";
+      state.submissionKey = "";
+      state.submissionStatus = "";
+      [els.name, els.role, els.years, els.open].forEach(input => input.value = "");
+      els.date.valueAsDate = new Date();
+      localStorage.removeItem("talentAssessmentDraft");
+      setView("answer");
+      render();
+    }
+
+    function scheduleSave() {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(flushSave, 0);
+    }
+
+    function flushSave() {
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = 0;
+      }
+      localStorage.setItem("talentAssessmentDraft", JSON.stringify({
+        answers: state.answers,
+        info: { name: els.name.value, role: els.role.value, years: els.years.value, date: els.date.value, open: els.open.value }
+      }));
+      updateProgress();
+      if (state.view !== "answer") renderReport();
+    }
+
+    function restore() {
+      try {
+        const draft = JSON.parse(localStorage.getItem("talentAssessmentDraft") || "{}");
+        state.answers = draft.answers || {};
+        state.index = 0;
+        const info = draft.info || {};
+        els.name.value = info.name || "";
+        els.role.value = info.role || "";
+        els.years.value = info.years || "";
+        els.open.value = info.open || "";
+        if (info.date) els.date.value = info.date;
+      } catch {}
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      setTimeout(() => els.toast.classList.remove("show"), 2200);
+    }
+    function escapeHtml(value) {
+      return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: m2-talent-assessment
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: HR_KEY
+        sync: false
+      - key: DATA_FILE
+        value: /var/data/talent-submissions.json
+    disk:
+      name: talent-data
+      mountPath: /var/data
+      sizeGB: 1
