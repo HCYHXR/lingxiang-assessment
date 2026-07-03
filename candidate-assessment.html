@@ -855,7 +855,7 @@
     .candidate-game-back {
       display: none;
     }
-    /* candidate quiz final 9-16 layout v4043 */
+    /* candidate quiz final 9-16 layout v4044 */
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .app {
       width: 100vw !important;
       height: 100dvh !important;
@@ -869,7 +869,7 @@
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .layout {
       display: block !important;
-      width: min(calc((100dvh - 96px) * 9 / 16), calc(100vw - 80px), 430px) !important;
+      width: min(calc((100dvh - 24px) * 9 / 16), calc(100vw - 24px), 480px) !important;
       height: auto !important;
       aspect-ratio: 9 / 16 !important;
       min-height: 0 !important;
@@ -911,6 +911,9 @@
       border: 0 !important;
       overflow: hidden !important;
     }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .level-scene::before {
+      content: none !important;
+    }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-head {
       position: static !important;
       width: auto !important;
@@ -922,24 +925,25 @@
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card .game-kicker {
       display: block !important;
       position: absolute !important;
-      top: 16px !important;
+      top: 14px !important;
       left: 50% !important;
       right: auto !important;
       width: auto !important;
       min-width: 0 !important;
       transform: translateX(-50%) !important;
       text-align: center !important;
-      font-size: clamp(18px, 2.2vw, 23px) !important;
+      font-size: 19px !important;
       line-height: 1.15 !important;
       white-space: nowrap !important;
       z-index: 90 !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card .game-progress-line {
       position: absolute !important;
-      top: 46px !important;
+      top: 44px !important;
       left: 50% !important;
       right: auto !important;
-      width: min(180px, 38%) !important;
+      width: 150px !important;
+      height: 6px !important;
       margin: 0 !important;
       transform: translateX(-50%) !important;
       z-index: 90 !important;
@@ -948,15 +952,15 @@
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .candidate-game-name {
       display: block !important;
       position: absolute !important;
-      top: 16px !important;
-      right: 16px !important;
+      top: 12px !important;
+      right: 12px !important;
       left: auto !important;
       z-index: 88 !important;
       border-radius: 999px !important;
-      padding: 7px 12px !important;
+      padding: 6px 9px !important;
       background: rgba(255,255,255,.78) !important;
       color: #5c6670 !important;
-      font-size: 12px !important;
+      font-size: 11px !important;
       line-height: 1.2 !important;
       font-weight: 900 !important;
       backdrop-filter: blur(8px) !important;
@@ -973,12 +977,12 @@
       align-items: center !important;
       justify-content: center !important;
       position: absolute !important;
-      left: 22px !important;
-      bottom: 116px !important;
+      left: 18px !important;
+      bottom: 112px !important;
       z-index: 12 !important;
       border: 0 !important;
       border-radius: 8px !important;
-      padding: 7px 12px !important;
+      padding: 7px 11px !important;
       background: rgba(255,255,255,.18) !important;
       color: rgba(92,102,112,.86) !important;
       font-size: 16px !important;
@@ -992,23 +996,24 @@
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-question-panel {
       position: absolute !important;
       z-index: 8 !important;
-      top: 72px !important;
+      top: 60px !important;
       left: 50% !important;
-      width: calc(100% - 42px) !important;
+      width: calc(100% - 24px) !important;
       margin: 0 !important;
-      padding: clamp(14px, 2.2vw, 20px) !important;
-      border-radius: 22px !important;
+      padding: 14px 14px 13px !important;
+      border-radius: 18px !important;
       background: rgba(255,255,255,.92) !important;
+      border: 0 !important;
       box-shadow: 0 14px 34px rgba(22,45,58,.13) !important;
       backdrop-filter: blur(10px) !important;
       transform: translateX(-50%) !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-meta-row {
-      font-size: clamp(13px, 1.6vw, 17px) !important;
+      font-size: 17px !important;
       margin-bottom: 8px !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-title {
-      font-size: clamp(20px, 2.4vw, 26px) !important;
+      font-size: 22px !important;
       line-height: 1.22 !important;
       margin: 0 0 12px !important;
       padding-right: 0 !important;
@@ -1019,20 +1024,20 @@
       gap: 8px !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .option {
-      min-height: clamp(48px, 6.2vh, 62px) !important;
-      padding: 8px 16px !important;
-      font-size: clamp(15px, 1.9vw, 18px) !important;
+      min-height: 50px !important;
+      padding: 8px 14px !important;
+      font-size: 16px !important;
       border-radius: 14px !important;
       justify-content: flex-start !important;
       display: grid !important;
-      grid-template-columns: clamp(32px, 5vw, 40px) 1fr !important;
-      column-gap: 18px !important;
+      grid-template-columns: 32px 1fr !important;
+      column-gap: 20px !important;
       align-items: center !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .letter {
-      width: clamp(32px, 5vw, 40px) !important;
-      height: clamp(32px, 5vw, 40px) !important;
-      font-size: clamp(15px, 2vw, 19px) !important;
+      width: 32px !important;
+      height: 32px !important;
+      font-size: 16px !important;
       margin-right: 0 !important;
       flex: 0 0 auto !important;
     }
@@ -1043,20 +1048,26 @@
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-runner-img {
       mix-blend-mode: normal !important;
       filter: none !important;
-      width: clamp(118px, 20vw, 160px) !important;
-      height: clamp(118px, 20vw, 160px) !important;
-      bottom: 142px !important;
+      width: 132px !important;
+      height: 132px !important;
+      bottom: 136px !important;
+      will-change: left, transform !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-choice-layer {
-      bottom: 34px !important;
-      width: calc(100% - 76px) !important;
+      bottom: 40px !important;
+      width: min(88%, 430px) !important;
       min-height: 70px !important;
-      gap: clamp(12px, 3vw, 24px) !important;
+      gap: 14px !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .scene-choice {
-      width: clamp(50px, 8vw, 62px) !important;
-      height: clamp(50px, 8vw, 62px) !important;
-      font-size: clamp(20px, 3vw, 26px) !important;
+      width: 58px !important;
+      height: 58px !important;
+      font-size: 24px !important;
     }
     @media (max-width: 760px) {
       html,
