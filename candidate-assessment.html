@@ -678,9 +678,8 @@
     .candidate-title-row { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 34px; }
     .report-title { font-size: 34px; font-weight: 900; line-height: 1.05; margin: 0 0 10px; letter-spacing: 0; }
     .candidate-meta { color: #425466; font-size: 15px; line-height: 1.45; font-weight: 900; }
-    .m2-logo { flex: 0 0 auto; width: 92px; height: 68px; border-radius: 16px; background: rgba(255,255,255,.74); display: grid; place-items: center; color: #b43a2e; font-weight: 900; box-shadow: 0 14px 34px rgba(50,63,67,.12); text-align: center; line-height: 1; }
-    .m2-logo strong { display: block; font-size: 22px; letter-spacing: 0; }
-    .m2-logo span { display: block; margin-top: 5px; font-size: 9px; color: #a3362c; }
+    .m2-logo { flex: 0 0 auto; width: 112px; height: 72px; border-radius: 16px; background: rgba(255,255,255,.82); display: grid; place-items: center; box-shadow: 0 14px 34px rgba(50,63,67,.12); overflow: hidden; }
+    .m2-logo img { width: 82px; height: auto; display: block; object-fit: contain; }
     .candidate-card {
       background: rgba(255,255,255,.78);
       border-radius: 22px;
@@ -723,7 +722,8 @@
     @media (max-width: 560px) {
       .candidate-title-row { margin-bottom: 24px; }
       .report-title { font-size: 30px; }
-      .m2-logo { width: 78px; height: 58px; }
+      .m2-logo { width: 88px; height: 58px; }
+      .m2-logo img { width: 66px; }
       .spirit-summary { grid-template-columns: 1fr; text-align: left; }
       .spirit-summary img { width: 170px; height: 170px; margin: -6px auto 0; }
       .trait-score-strip { grid-template-columns: repeat(2, 1fr); }
@@ -3273,7 +3273,7 @@
                 <h2 class="report-title">灵相报告</h2>
                 <div class="candidate-meta">候选人：${escapeHtml(els.name.value || "-")}</div>
               </div>
-              <div class="m2-logo"><strong>M2</strong><span>魔兔网络</span></div>
+              <div class="m2-logo"><img src="talent_tool_assets/m2_report_logo.png" alt="M2"></div>
             </div>
 
             <section class="candidate-card candidate-hero-card">
