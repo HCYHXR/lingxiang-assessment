@@ -874,6 +874,8 @@
       left: auto !important;
       top: auto !important;
       transform: none !important;
+      border-radius: 34px !important;
+      overflow: hidden !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .panel.main,
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area,
@@ -885,21 +887,25 @@
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .panel.main {
       overflow: visible !important;
+      border-radius: 34px !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area {
       padding: 0 !important;
       display: block !important;
       background: transparent !important;
+      border-radius: 34px !important;
+      overflow: hidden !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area::before {
       content: none !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card {
       margin: 0 !important;
-      border-radius: 28px !important;
+      border-radius: 34px !important;
       background-position: center center !important;
       box-shadow: 0 18px 46px rgba(54, 83, 64, .22) !important;
       border: 0 !important;
+      overflow: hidden !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-head {
       position: static !important;
@@ -1068,29 +1074,33 @@
         justify-content: center !important;
       }
       body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .layout {
-        width: 100vw !important;
+        width: min(100vw - 24px, 480px) !important;
         max-width: 480px !important;
-        height: 100svh !important;
+        height: calc(100svh - 24px) !important;
         aspect-ratio: auto !important;
         min-height: 0 !important;
-        margin: 0 auto !important;
+        margin: 12px auto !important;
+        border-radius: 34px !important;
+        overflow: hidden !important;
       }
       body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .panel.main,
       body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area,
       body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card {
-        height: 100svh !important;
-        min-height: 100svh !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        border-radius: 34px !important;
+        overflow: hidden !important;
       }
       body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .panel.main,
       body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .question-area {
         background: #d9efdc !important;
       }
       body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-card {
-        border-radius: 0 !important;
+        border-radius: 34px !important;
         background-position: center top !important;
-        height: calc(100svh + 6px) !important;
-        min-height: calc(100svh + 6px) !important;
-        margin-top: -3px !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        margin-top: 0 !important;
         transform: translate3d(0, 0, 0) !important;
         contain: layout paint !important;
       }
