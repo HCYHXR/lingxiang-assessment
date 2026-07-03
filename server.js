@@ -9,7 +9,7 @@ const dataFile = process.env.DATA_FILE
 const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "";
-const candidateVersion = "4038";
+const candidateVersion = "4039";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",

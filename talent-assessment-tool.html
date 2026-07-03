@@ -2511,6 +2511,7 @@
 
     const HR_ACCESS_KEY = new URLSearchParams(window.location.search).get("key") || "";
     const SYNC_API = `${location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787"}/api/submissions${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
+    const SUBMISSION_CACHE_KEY = "talentHrSubmissionCache";
     const candidateMode = new URLSearchParams(window.location.search).has("candidate");
     const hrMode = location.pathname === "/hr" || new URLSearchParams(window.location.search).has("hr");
     if (candidateMode) document.body.dataset.mode = "candidate";
@@ -2558,6 +2559,7 @@
       }
       els.date.valueAsDate = new Date();
       restore();
+      restoreCachedSubmissions();
       state.index = 0;
       renderJump();
       render();
@@ -3022,7 +3024,8 @@
         const response = await fetch(SYNC_API, { cache: "no-store" });
         if (!response.ok) throw new Error("sync unavailable");
         const data = await response.json();
-        state.submissions = Array.isArray(data.submissions) ? data.submissions : [];
+        mergeSubmissions(Array.isArray(data.submissions) ? data.submissions : []);
+        persistCachedSubmissions();
         state.syncReady = true;
         if (hrMode && state.view === "hr" && state.submissions.length && !state.activeSubmissionId) {
           loadSubmission(state.submissions[0].id, { silent: true });
@@ -3032,9 +3035,35 @@
         if (!silent) showToast("已刷新候选人提交记录");
       } catch (error) {
         state.syncReady = false;
+        restoreCachedSubmissions();
         updateSubmissionDock();
         if (!silent) showToast("未连接到同步服务，请先启动本地服务");
       }
+    }
+
+    function restoreCachedSubmissions() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(SUBMISSION_CACHE_KEY) || "[]");
+        mergeSubmissions(Array.isArray(cached) ? cached : []);
+        if (state.submissions.length) state.syncReady = true;
+      } catch {}
+    }
+
+    function persistCachedSubmissions() {
+      try {
+        localStorage.setItem(SUBMISSION_CACHE_KEY, JSON.stringify(state.submissions.slice(0, 500)));
+      } catch {}
+    }
+
+    function mergeSubmissions(incoming) {
+      const map = new Map();
+      [...incoming, ...state.submissions].forEach(item => {
+        if (!item || !item.id || map.has(item.id)) return;
+        map.set(item.id, item);
+      });
+      state.submissions = [...map.values()].sort((a, b) =>
+        String(b.receivedAt || b.submittedAt || "").localeCompare(String(a.receivedAt || a.submittedAt || ""))
+      );
     }
 
     function updateSubmissionDock() {
@@ -3056,6 +3085,7 @@
       els.years.value = info.years || "";
       els.open.value = info.open || "";
       if (info.date) els.date.value = info.date;
+      persistCachedSubmissions();
       flushSave();
       renderHrReport();
       if (!silent) showToast(`已载入 ${info.name || "候选人"} 的报告`);
