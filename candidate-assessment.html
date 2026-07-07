@@ -2982,12 +2982,7 @@
     };
 
     async function init() {
-      try {
-        const response = await fetch("talent-assessment-questions.json");
-        state.questions = await response.json();
-      } catch (error) {
-        state.questions = EMBEDDED_QUESTIONS;
-      }
+      state.questions = EMBEDDED_QUESTIONS;
       els.date.valueAsDate = new Date();
       const restoredDraft = restore();
       renderJump();

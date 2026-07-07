@@ -1,6 +1,7 @@
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const zlib = require("node:zlib");
 
 const rootDir = __dirname;
 const dataFile = process.env.DATA_FILE
@@ -9,7 +10,7 @@ const dataFile = process.env.DATA_FILE
 const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "";
-const candidateVersion = "4044";
+const candidateVersion = "4045";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -23,14 +24,32 @@ const mimeTypes = {
   ".svg": "image/svg+xml; charset=utf-8",
 };
 
-function withCors(headers = {}) {
+function cacheHeaderFor(filePath = "") {
+  const ext = path.extname(filePath).toLowerCase();
+  if ([".png", ".jpg", ".jpeg", ".webp", ".svg"].includes(ext)) {
+    return "public, max-age=31536000, immutable";
+  }
+  if (ext === ".json") {
+    return "public, max-age=3600";
+  }
+  if ([".html", ".js", ".css"].includes(ext)) {
+    return "public, max-age=60, must-revalidate";
+  }
+  return "no-store, no-cache, must-revalidate, proxy-revalidate";
+}
+
+function canGzip(req, filePath = "") {
+  const ext = path.extname(filePath).toLowerCase();
+  return [".html", ".css", ".js", ".json", ".svg", ".txt"].includes(ext)
+    && String(req.headers["accept-encoding"] || "").includes("gzip");
+}
+
+function withCors(headers = {}, cacheControl = "no-store, no-cache, must-revalidate, proxy-revalidate") {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-    "Pragma": "no-cache",
-    "Expires": "0",
+    "Cache-Control": cacheControl,
     ...headers,
   };
 }
@@ -150,8 +169,15 @@ async function serveStatic(req, res) {
     const stat = await fs.stat(requested);
     const filePath = stat.isDirectory() ? path.join(requested, "index.html") : requested;
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, withCors({ "Content-Type": mimeTypes[ext] || "application/octet-stream" }));
-    res.end(await fs.readFile(filePath));
+    let body = await fs.readFile(filePath);
+    const headers = { "Content-Type": mimeTypes[ext] || "application/octet-stream" };
+    if (body.length > 1024 && canGzip(req, filePath)) {
+      body = await zlib.promises.gzip(body);
+      headers["Content-Encoding"] = "gzip";
+      headers["Vary"] = "Accept-Encoding";
+    }
+    res.writeHead(200, withCors(headers, cacheHeaderFor(filePath)));
+    res.end(body);
   } catch {
     res.writeHead(404, withCors({ "Content-Type": "text/plain; charset=utf-8" }));
     res.end("Not found");
