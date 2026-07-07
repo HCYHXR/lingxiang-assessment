@@ -158,8 +158,10 @@ async function serveStatic(req, res) {
     "/candidate": "/candidate-assessment.html",
   };
   const pathname = decodeURIComponent(aliases[url.pathname] || url.pathname);
-  const requested = path.normalize(path.join(rootDir, pathname));
-  if (!requested.startsWith(rootDir)) {
+  const relativePath = pathname.replace(/^[/\\]+/, "");
+  const requested = path.resolve(rootDir, relativePath);
+  const rootPrefix = rootDir.endsWith(path.sep) ? rootDir : `${rootDir}${path.sep}`;
+  if (requested !== rootDir && !requested.startsWith(rootPrefix)) {
     res.writeHead(403, withCors({ "Content-Type": "text/plain; charset=utf-8" }));
     res.end("Forbidden");
     return;
@@ -172,13 +174,18 @@ async function serveStatic(req, res) {
     let body = await fs.readFile(filePath);
     const headers = { "Content-Type": mimeTypes[ext] || "application/octet-stream" };
     if (body.length > 1024 && canGzip(req, filePath)) {
-      body = await zlib.promises.gzip(body);
-      headers["Content-Encoding"] = "gzip";
-      headers["Vary"] = "Accept-Encoding";
+      try {
+        body = await zlib.promises.gzip(body);
+        headers["Content-Encoding"] = "gzip";
+        headers["Vary"] = "Accept-Encoding";
+      } catch (error) {
+        console.error(`gzip failed for ${filePath}:`, error);
+      }
     }
     res.writeHead(200, withCors(headers, cacheHeaderFor(filePath)));
     res.end(body);
-  } catch {
+  } catch (error) {
+    console.error(`static file not found: ${requested}`, error);
     res.writeHead(404, withCors({ "Content-Type": "text/plain; charset=utf-8" }));
     res.end("Not found");
   }
