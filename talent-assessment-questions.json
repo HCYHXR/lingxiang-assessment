@@ -209,29 +209,6 @@
   {
     "number": 10,
     "type": "choice",
-    "title": "在上一个团队中,你最常被同事评价为?",
-    "options": [
-      {
-        "key": "A",
-        "text": "靠谱,交代的事一定能完成"
-      },
-      {
-        "key": "B",
-        "text": "有想法,总能提出新点子"
-      },
-      {
-        "key": "C",
-        "text": "好沟通,大家都愿意和你合作"
-      },
-      {
-        "key": "D",
-        "text": "行动快,事情推进效率高"
-      }
-    ]
-  },
-  {
-    "number": 11,
-    "type": "choice",
     "title": "小组讨论中,如果大家意见分歧,你往往会?",
     "options": [
       {
@@ -253,7 +230,7 @@
     ]
   },
   {
-    "number": 12,
+    "number": 11,
     "type": "choice",
     "title": "当工作压力很大时,你通常会?",
     "options": [
@@ -276,7 +253,7 @@
     ]
   },
   {
-    "number": 13,
+    "number": 12,
     "type": "choice",
     "title": "项目进度落后时,你通常会?",
     "options": [
@@ -299,7 +276,7 @@
     ]
   },
   {
-    "number": 14,
+    "number": 13,
     "type": "choice",
     "title": "在处理大量数据时,你的状态是?",
     "options": [
@@ -322,7 +299,7 @@
     ]
   },
   {
-    "number": 15,
+    "number": 14,
     "type": "choice",
     "title": "你觉得自己做决策更多靠?",
     "options": [
@@ -345,30 +322,7 @@
     ]
   },
   {
-    "number": 16,
-    "type": "choice",
-    "title": "回顾过去,你曾经发现流程有更好的改进方法时,你是?",
-    "options": [
-      {
-        "key": "A",
-        "text": "直接按新方法做,有效再推广"
-      },
-      {
-        "key": "B",
-        "text": "写建议报告提交给领导"
-      },
-      {
-        "key": "C",
-        "text": "私下和负责同事沟通"
-      },
-      {
-        "key": "D",
-        "text": "在团队会议上提出来讨论"
-      }
-    ]
-  },
-  {
-    "number": 17,
+    "number": 15,
     "type": "choice",
     "title": "你更享受哪种类型的表扬?",
     "options": [
@@ -391,7 +345,7 @@
     ]
   },
   {
-    "number": 18,
+    "number": 16,
     "type": "choice",
     "title": "你更享受被怎样表扬?",
     "options": [
@@ -414,7 +368,7 @@
     ]
   },
   {
-    "number": 19,
+    "number": 17,
     "type": "choice",
     "title": "面对一个全新的任务,你的第一步通常是?",
     "options": [
@@ -437,30 +391,7 @@
     ]
   },
   {
-    "number": 20,
-    "type": "choice",
-    "title": "你对工作文档(如SOP、制度)的态度是?",
-    "options": [
-      {
-        "key": "A",
-        "text": "必须详细、无歧义,否则会不安"
-      },
-      {
-        "key": "B",
-        "text": "大致明确即可,细节可灵活"
-      },
-      {
-        "key": "C",
-        "text": "写出来很重要,但执行看情况"
-      },
-      {
-        "key": "D",
-        "text": "不喜欢写文档,口头沟通更快"
-      }
-    ]
-  },
-  {
-    "number": 21,
+    "number": 18,
     "type": "choice",
     "title": "过去工作中,你和同事意见不合时,你更倾向于?",
     "options": [
@@ -483,7 +414,7 @@
     ]
   },
   {
-    "number": 22,
+    "number": 19,
     "type": "choice",
     "title": "你认为自己最突出的工作习惯是?",
     "options": [
@@ -506,7 +437,7 @@
     ]
   },
   {
-    "number": 23,
+    "number": 20,
     "type": "choice",
     "title": "你对“加班”的看法更接近?",
     "options": [
@@ -529,7 +460,7 @@
     ]
   },
   {
-    "number": 24,
+    "number": 21,
     "type": "choice",
     "title": "你更擅长处理以下哪种问题?",
     "options": [
@@ -552,7 +483,7 @@
     ]
   },
   {
-    "number": 25,
+    "number": 22,
     "type": "choice",
     "title": "你对“失败”的态度是?",
     "options": [
@@ -575,7 +506,7 @@
     ]
   },
   {
-    "number": 26,
+    "number": 23,
     "type": "choice",
     "title": "你更希望领导如何管理你?",
     "options": [
@@ -598,7 +529,7 @@
     ]
   },
   {
-    "number": 27,
+    "number": 24,
     "type": "choice",
     "title": "你认为自己在团队中更能补充哪种空缺?",
     "options": [
@@ -621,30 +552,7 @@
     ]
   },
   {
-    "number": 28,
-    "type": "choice",
-    "title": "你对“流程优化”的兴趣程度是?",
-    "options": [
-      {
-        "key": "A",
-        "text": "很喜欢,经常思考如何更高效"
-      },
-      {
-        "key": "B",
-        "text": "一般,有需要才做"
-      },
-      {
-        "key": "C",
-        "text": "不太主动,但愿意配合"
-      },
-      {
-        "key": "D",
-        "text": "无所谓,按现有流程做"
-      }
-    ]
-  },
-  {
-    "number": 29,
+    "number": 25,
     "type": "choice",
     "title": "当你需要向他人解释复杂概念时,你倾向于?",
     "options": [
@@ -667,30 +575,7 @@
     ]
   },
   {
-    "number": 30,
-    "type": "choice",
-    "title": "你认为自己最大的职业优势是?",
-    "options": [
-      {
-        "key": "A",
-        "text": "责任心强,从不掉链子"
-      },
-      {
-        "key": "B",
-        "text": "学习能力强,新东西上手快"
-      },
-      {
-        "key": "C",
-        "text": "人缘好,能和不同人合作"
-      },
-      {
-        "key": "D",
-        "text": "抗压能力强,紧急情况不慌"
-      }
-    ]
-  },
-  {
-    "number": 31,
+    "number": 26,
     "type": "choice",
     "title": "对于计划和时间安排,你的习惯是?",
     "options": [
@@ -713,76 +598,7 @@
     ]
   },
   {
-    "number": 32,
-    "type": "choice",
-    "title": "如果让你用一天时间了解公司整体业务和各部门运作,你更倾向于:",
-    "options": [
-      {
-        "key": "A",
-        "text": "看业务数据和财务报告,自己分析关键指标"
-      },
-      {
-        "key": "B",
-        "text": "去各岗位跟岗半天,观察他们实际做什么"
-      },
-      {
-        "key": "C",
-        "text": "和部门负责人访谈,问他们的挑战和需求"
-      },
-      {
-        "key": "D",
-        "text": "查阅流程文档和组织架构图,梳理逻辑"
-      }
-    ]
-  },
-  {
-    "number": 33,
-    "type": "choice",
-    "title": "公司想引入一套新的HR系统,你最可能主动承担的见色是?",
-    "options": [
-      {
-        "key": "A",
-        "text": "需求调研和供应商对接"
-      },
-      {
-        "key": "B",
-        "text": "数据迁移和系统测试"
-      },
-      {
-        "key": "C",
-        "text": "用户培训和操作手册编写"
-      },
-      {
-        "key": "D",
-        "text": "推广落地,说服各部门使用"
-      }
-    ]
-  },
-  {
-    "number": 34,
-    "type": "choice",
-    "title": "当你完成一项工作时,哪种成就感最让你满足?",
-    "options": [
-      {
-        "key": "A",
-        "text": "成功说服一个优秀人才加入公司"
-      },
-      {
-        "key": "B",
-        "text": "帮助一位同事解决了困扰他很久的工作难题"
-      },
-      {
-        "key": "C",
-        "text": "发现了一组数据背后的异常规律,避免了错误"
-      },
-      {
-        "key": "D",
-        "text": "把一个混乱的流程整理得井井有条,大家用起来都说好"
-      }
-    ]
-  },
-  {
-    "number": 35,
+    "number": 27,
     "type": "choice",
     "title": "工作中你更害怕遇到什么情况?",
     "options": [
@@ -805,30 +621,7 @@
     ]
   },
   {
-    "number": 36,
-    "type": "choice",
-    "title": "如果让你设计一个员工满意度调查问卷,你会先?",
-    "options": [
-      {
-        "key": "A",
-        "text": "参考行业标准模板"
-      },
-      {
-        "key": "B",
-        "text": "访谈不同岗位员工,了解痛点"
-      },
-      {
-        "key": "C",
-        "text": "围绕公司当前战略重点设题"
-      },
-      {
-        "key": "D",
-        "text": "确保问题清晰、无歧义,易统计"
-      }
-    ]
-  },
-  {
-    "number": 37,
+    "number": 28,
     "type": "choice",
     "title": "你更可能因为什么原因主动学习一个新技能?",
     "options": [
@@ -851,7 +644,7 @@
     ]
   },
   {
-    "number": 38,
+    "number": 29,
     "type": "choice",
     "title": "你个人更欣赏哪种?格的领导者?",
     "options": [
@@ -874,7 +667,7 @@
     ]
   },
   {
-    "number": 39,
+    "number": 30,
     "type": "choice",
     "title": "被分配到一个自己不熟悉的任务时,你通常?",
     "options": [
@@ -897,30 +690,7 @@
     ]
   },
   {
-    "number": 40,
-    "type": "choice",
-    "title": "你对“数据分析在HR中的应用”的态度是?",
-    "options": [
-      {
-        "key": "A",
-        "text": "非常重要,应作为决策依据"
-      },
-      {
-        "key": "B",
-        "text": "有一定参考价值,但不能唯数据论"
-      },
-      {
-        "key": "C",
-        "text": "目前作用有限,还是看人"
-      },
-      {
-        "key": "D",
-        "text": "不太了解,需要学习"
-      }
-    ]
-  },
-  {
-    "number": 41,
+    "number": 31,
     "type": "likert",
     "title": "我容易成为聚会的灵魂人物。",
     "options": [
@@ -947,7 +717,7 @@
     ]
   },
   {
-    "number": 42,
+    "number": 32,
     "type": "likert",
     "title": "我倾向于挑剔别人的缺点。",
     "options": [
@@ -974,7 +744,7 @@
     ]
   },
   {
-    "number": 43,
+    "number": 33,
     "type": "likert",
     "title": "我会把事情做得彻底、有条理。",
     "options": [
@@ -1001,7 +771,7 @@
     ]
   },
   {
-    "number": 44,
+    "number": 34,
     "type": "likert",
     "title": "我容易沮丧、情绪低落。",
     "options": [
@@ -1028,7 +798,7 @@
     ]
   },
   {
-    "number": 45,
+    "number": 35,
     "type": "likert",
     "title": "我有丰富的想象力。",
     "options": [
@@ -1055,7 +825,7 @@
     ]
   },
   {
-    "number": 46,
+    "number": 36,
     "type": "likert",
     "title": "我是一个比较安静的人。",
     "options": [
@@ -1082,7 +852,7 @@
     ]
   },
   {
-    "number": 47,
+    "number": 37,
     "type": "likert",
     "title": "我是一个值得信赖的人。",
     "options": [
@@ -1109,7 +879,7 @@
     ]
   },
   {
-    "number": 48,
+    "number": 38,
     "type": "likert",
     "title": "我有时会有点懒散。",
     "options": [
@@ -1136,7 +906,7 @@
     ]
   },
   {
-    "number": 49,
+    "number": 39,
     "type": "likert",
     "title": "即使处于压力下,我也能保持镇定。",
     "options": [
@@ -1163,7 +933,7 @@
     ]
   },
   {
-    "number": 50,
+    "number": 40,
     "type": "likert",
     "title": "我对许多不同的领域都有好奇心。",
     "options": [
@@ -1190,7 +960,7 @@
     ]
   },
   {
-    "number": 51,
+    "number": 41,
     "type": "likert",
     "title": "我喜欢团队合作胜过单独工作。",
     "options": [
@@ -1217,7 +987,7 @@
     ]
   },
   {
-    "number": 52,
+    "number": 42,
     "type": "likert",
     "title": "我会严格按照计划行事。",
     "options": [
@@ -1244,7 +1014,7 @@
     ]
   },
   {
-    "number": 53,
+    "number": 43,
     "type": "likert",
     "title": "我容易紧张。",
     "options": [
@@ -1271,7 +1041,7 @@
     ]
   },
   {
-    "number": 54,
+    "number": 44,
     "type": "likert",
     "title": "我喜欢学习新的工作方法。",
     "options": [
@@ -1298,7 +1068,7 @@
     ]
   },
   {
-    "number": 55,
+    "number": 45,
     "type": "likert",
     "title": "我能迅速与人建立联系。",
     "options": [
@@ -1325,7 +1095,7 @@
     ]
   },
   {
-    "number": 56,
+    "number": 46,
     "type": "likert",
     "title": "我会主动帮助同事解决困难。",
     "options": [
@@ -1352,7 +1122,7 @@
     ]
   },
   {
-    "number": 57,
+    "number": 47,
     "type": "likert",
     "title": "我做事很少拖延。",
     "options": [
@@ -1379,7 +1149,7 @@
     ]
   },
   {
-    "number": 58,
+    "number": 48,
     "type": "likert",
     "title": "我能冷静地处理突发事件。",
     "options": [
@@ -1406,7 +1176,7 @@
     ]
   },
   {
-    "number": 59,
+    "number": 49,
     "type": "likert",
     "title": "我喜欢探索新的兴趣爱好。",
     "options": [
@@ -1433,7 +1203,7 @@
     ]
   },
   {
-    "number": 60,
+    "number": 50,
     "type": "likert",
     "title": "我相信大多数人是善意的。",
     "options": [
