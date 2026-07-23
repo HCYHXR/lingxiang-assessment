@@ -12,7 +12,7 @@ const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "";
 const tokenSecret = process.env.CANDIDATE_TOKEN_SECRET || hrKey || "lingxiang-local-token-secret";
-const candidateVersion = "4047";
+const candidateVersion = "4048";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
