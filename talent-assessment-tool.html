@@ -3089,7 +3089,7 @@
         }).join("")
         : `<div class="submission-empty">${state.syncReady ? "还没有收到候选人提交。" : "正在连接候选人提交记录..."}</div>`;
       return `
-        <section class="submission-dock">
+        <section class="submission-dock submission-list-dock">
           <div class="submission-head">
             <div>
               <div class="submission-title">候选人提交记录</div>
@@ -3164,7 +3164,7 @@
     }
 
     function updateSubmissionDock() {
-      const dock = els.reportView.querySelector(".submission-dock");
+      const dock = els.reportView.querySelector(".submission-list-dock");
       if (!dock) return;
       dock.outerHTML = renderSubmissionDock();
       bindSubmissionDock();
