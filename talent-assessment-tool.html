@@ -484,6 +484,22 @@
     .submission-name { display: block; font-weight: 900; margin-bottom: 3px; }
     .submission-meta { color: #667085; font-size: 13px; font-weight: 800; }
     .submission-badge { border-radius: 999px; background: #e8f4f1; color: #166270; padding: 5px 9px; font-size: 12px; font-weight: 900; white-space: nowrap; }
+    .candidate-gate-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin: 12px 0; }
+    .candidate-gate-form input { min-height: 40px; }
+    .candidate-gate-bulk { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 10px 0 12px; align-items: stretch; }
+    .candidate-gate-bulk textarea { min-height: 76px; margin: 0; }
+    .candidate-roster-list { display: grid; gap: 8px; }
+    .candidate-roster-item { border: 1px solid #d7ded9; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; }
+    .candidate-roster-status { border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 900; white-space: nowrap; background: #f0f2f5; color: #53606f; }
+    .candidate-roster-status.started { background: #fff6db; color: #996100; }
+    .candidate-roster-status.submitted { background: #e8f4f1; color: #166270; }
+    .candidate-roster-actions { display: flex; gap: 6px; align-items: center; }
+    @media (max-width: 860px) {
+      .candidate-gate-form,
+      .candidate-gate-bulk,
+      .candidate-roster-item { grid-template-columns: 1fr; }
+      .candidate-roster-actions { justify-content: flex-start; flex-wrap: wrap; }
+    }
     .hr-sheet {
       background: #f1f8ef;
       border: 1px solid #d7e6d6;
@@ -2446,13 +2462,15 @@
     const answerGuide = { name: "灵狐", src: "talent_tool_assets/spirit_fox_jade_bright_cutout.png" };
 
     const HR_ACCESS_KEY = new URLSearchParams(window.location.search).get("key") || "";
-    const SYNC_API = `${location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787"}/api/submissions${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
+    const API_ORIGIN = location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787";
+    const SYNC_API = `${API_ORIGIN}/api/submissions${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
+    const CANDIDATES_API = `${API_ORIGIN}/api/candidates${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
     const SUBMISSION_CACHE_KEY = "talentHrSubmissionCache";
     const candidateMode = new URLSearchParams(window.location.search).has("candidate");
     const hrMode = location.pathname === "/hr" || new URLSearchParams(window.location.search).has("hr");
     if (candidateMode) document.body.dataset.mode = "candidate";
     if (hrMode) document.body.dataset.mode = "hr";
-    const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], activeSubmissionId: "", syncReady: false };
+    const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], candidates: [], activeSubmissionId: "", syncReady: false, rosterReady: false };
     let saveTimer = 0;
     let answerAnimFrameA = 0;
     let answerAnimFrameB = 0;
@@ -2818,6 +2836,7 @@
         </section>
       `).join("");
       els.reportView.innerHTML = `
+        ${renderCandidateGateDock()}
         ${renderSubmissionDock()}
         <article class="hr-sheet">
           <header class="hr-sheet-header">
@@ -2899,6 +2918,7 @@
         </article>
       `;
       bindSubmissionDock();
+      bindCandidateGateDock();
       els.reportView.querySelectorAll("[data-hr-action]").forEach(button => {
         button.addEventListener("click", () => {
           const action = button.dataset.hrAction;
@@ -2910,6 +2930,145 @@
         });
       });
       refreshSubmissions({ silent: true });
+      refreshCandidates({ silent: true });
+    }
+
+    function candidateStatusText(status) {
+      return status === "submitted" ? "已完成" : status === "started" ? "作答中" : "未开始";
+    }
+
+    function renderCandidateGateDock() {
+      const rows = state.candidates.length
+        ? state.candidates.map(item => `
+          <div class="candidate-roster-item">
+            <span>
+              <span class="submission-name">${escapeHtml(item.name || "-")}</span>
+              <span class="submission-meta">${escapeHtml(item.phoneMasked || "-")} · ${escapeHtml(item.role || "未填写岗位")} · ${escapeHtml(item.note || "")}</span>
+            </span>
+            <span class="candidate-roster-actions">
+              <span class="candidate-roster-status ${escapeHtml(item.status || "invited")}">${candidateStatusText(item.status)}</span>
+              ${item.status === "submitted" ? `<button class="hr-action" data-candidate-reset="${escapeHtml(item.id)}" type="button">重置资格</button>` : ""}
+            </span>
+          </div>
+        `).join("")
+        : `<div class="submission-empty">${state.rosterReady ? "还没有录入候选人。" : "正在连接候选人名单..."}</div>`;
+      return `
+        <section class="submission-dock candidate-gate-dock">
+          <div class="submission-head">
+            <div>
+              <div class="submission-title">候选人准入名单</div>
+              <div class="submission-meta">候选人必须用这里录入的姓名 + 手机号校验，通过后才能进入测评；每人仅限提交一次。</div>
+            </div>
+            <div class="submission-actions">
+              <button class="hr-action" data-candidate-action="refresh" type="button">刷新名单</button>
+            </div>
+          </div>
+          <div class="candidate-gate-form">
+            <input id="gateName" placeholder="姓名">
+            <input id="gatePhone" placeholder="手机号">
+            <input id="gateRole" placeholder="应聘岗位/备注">
+            <button class="hr-action" data-candidate-action="add" type="button">添加</button>
+          </div>
+          <div class="candidate-gate-bulk">
+            <textarea id="gateBulk" placeholder="批量粘贴：每行一个候选人，例如：张三 13800000000 HRBP"></textarea>
+            <button class="hr-action" data-candidate-action="bulk" type="button">批量导入</button>
+          </div>
+          <div class="candidate-roster-list">${rows}</div>
+        </section>
+      `;
+    }
+
+    function bindCandidateGateDock() {
+      const add = els.reportView.querySelector("[data-candidate-action='add']");
+      const bulk = els.reportView.querySelector("[data-candidate-action='bulk']");
+      const refresh = els.reportView.querySelector("[data-candidate-action='refresh']");
+      if (add) add.addEventListener("click", addCandidateFromForm);
+      if (bulk) bulk.addEventListener("click", importCandidateBulk);
+      if (refresh) refresh.addEventListener("click", () => refreshCandidates({ silent: false }));
+      els.reportView.querySelectorAll("[data-candidate-reset]").forEach(button => {
+        button.addEventListener("click", () => resetCandidate(button.dataset.candidateReset));
+      });
+    }
+
+    async function refreshCandidates({ silent = false } = {}) {
+      if (candidateMode || state.view !== "hr") return;
+      try {
+        const response = await fetch(CANDIDATES_API, { cache: "no-store" });
+        if (!response.ok) throw new Error("candidate roster unavailable");
+        const data = await response.json();
+        state.candidates = Array.isArray(data.candidates) ? data.candidates : [];
+        state.rosterReady = true;
+        updateCandidateGateDock();
+        if (!silent) showToast("已刷新候选人名单");
+      } catch (error) {
+        state.rosterReady = false;
+        updateCandidateGateDock();
+        if (!silent) showToast("未连接到候选人名单服务");
+      }
+    }
+
+    function updateCandidateGateDock() {
+      const dock = els.reportView.querySelector(".candidate-gate-dock");
+      if (!dock) return;
+      dock.outerHTML = renderCandidateGateDock();
+      bindCandidateGateDock();
+    }
+
+    async function addCandidateFromForm() {
+      const name = els.reportView.querySelector("#gateName")?.value.trim();
+      const phone = els.reportView.querySelector("#gatePhone")?.value.trim();
+      const role = els.reportView.querySelector("#gateRole")?.value.trim();
+      if (!name || !phone) {
+        showToast("请填写候选人姓名和手机号");
+        return;
+      }
+      await saveCandidates([{ name, phone, role }]);
+    }
+
+    function parseCandidateBulk(text) {
+      return String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+        const parts = line.split(/[\t,，\s]+/).filter(Boolean);
+        return { name: parts[0] || "", phone: parts[1] || "", role: parts.slice(2).join(" ") };
+      });
+    }
+
+    async function importCandidateBulk() {
+      const text = els.reportView.querySelector("#gateBulk")?.value || "";
+      const rows = parseCandidateBulk(text);
+      if (!rows.length) {
+        showToast("请先粘贴候选人名单");
+        return;
+      }
+      await saveCandidates(rows);
+    }
+
+    async function saveCandidates(candidates) {
+      try {
+        const response = await fetch(CANDIDATES_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ candidates })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || "保存失败");
+        await refreshCandidates({ silent: true });
+        showToast(`已保存 ${data.candidates.length} 位候选人`);
+      } catch (error) {
+        showToast(error.message || "候选人保存失败");
+      }
+    }
+
+    async function resetCandidate(id) {
+      try {
+        const resetUrl = `${API_ORIGIN}/api/candidates/${encodeURIComponent(id)}/reset${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
+        const response = await fetch(resetUrl, { method: "POST" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || "重置失败");
+        await refreshCandidates({ silent: true });
+        showToast("已重置候选人作答资格");
+      } catch (error) {
+        showToast(error.message || "重置失败");
+      }
     }
 
     function renderSubmissionDock() {

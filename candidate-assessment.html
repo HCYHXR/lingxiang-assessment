@@ -1208,12 +1208,16 @@
         </div>
         <div class="intro-copy">
           <h1 class="intro-title">灵相测评</h1>
-          <p class="intro-subtitle">请填写姓名后开始测评。完成全部题目后，系统会生成你的专属灵相报告。</p>
+          <p class="intro-subtitle">请填写招聘预留的姓名和手机号，通过校验后开始测评。完成全部题目后，系统会生成你的专属灵相报告。</p>
         </div>
         <div class="intro-form">
           <div class="intro-field">
             <label for="introName">姓名</label>
             <input id="introName" autocomplete="name" placeholder="请输入你的姓名">
+          </div>
+          <div class="intro-field">
+            <label for="introPhone">手机号</label>
+            <input id="introPhone" autocomplete="tel" inputmode="tel" placeholder="请输入招聘预留手机号">
           </div>
           <button class="intro-start" id="introStart" type="button">开始测评</button>
           <div class="intro-error" id="introError" aria-live="polite"></div>
@@ -2870,12 +2874,14 @@
     ];
     const answerGuide = { name: "灵狐", src: "talent_tool_assets/spirit_fox_fast.webp" };
 
-    const SYNC_API = `${location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787"}/api/submissions`;
-    const DRAFT_KEY = "talentAssessmentDraftV50";
+    const API_ORIGIN = location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787";
+    const SYNC_API = `${API_ORIGIN}/api/submissions`;
+    const AUTH_API = `${API_ORIGIN}/api/candidate-auth`;
+    const DRAFT_KEY = "talentAssessmentDraftV50Auth";
     const candidateMode = true;
     if (candidateMode) document.body.dataset.mode = "candidate";
     if (candidateMode) document.body.dataset.gate = "intro";
-    const state = { questions: [], index: 0, answers: {}, view: "answer", autoTimer: null, submissionId: "", submissionKey: "", submissionStatus: "" };
+    const state = { questions: [], index: 0, answers: {}, view: "answer", autoTimer: null, submissionId: "", submissionKey: "", submissionStatus: "", candidateToken: "", candidateId: "", candidatePhone: "" };
     let saveTimer = 0;
     let suppressDraftSave = false;
     let answerAnimFrameA = 0;
@@ -2912,6 +2918,7 @@
       next: document.querySelector("#nextBtn"),
       intro: document.querySelector("#candidateIntro"),
       introName: document.querySelector("#introName"),
+      introPhone: document.querySelector("#introPhone"),
       introStart: document.querySelector("#introStart"),
       introError: document.querySelector("#introError"),
       toast: document.querySelector("#toast")
@@ -2926,11 +2933,13 @@
       bind();
       if (candidateMode) {
         if (els.name.value) els.introName.value = els.name.value;
+        if (state.candidatePhone) els.introPhone.value = state.candidatePhone;
         const answeredCount = Object.keys(state.answers).length;
         const completedDraft = answeredCount >= state.questions.length;
-        document.body.dataset.gate = answeredCount ? "quiz" : "intro";
+        document.body.dataset.gate = state.candidateToken && answeredCount ? "quiz" : "intro";
         setView(completedDraft || state.view === "candidate" ? "candidate" : "answer");
-        if (!restoredDraft || !answeredCount) setTimeout(() => els.introName.focus(), 80);
+        if (!state.candidateToken) setView("answer");
+        if (!restoredDraft || !answeredCount || !state.candidateToken) setTimeout(() => els.introName.focus(), 80);
       }
     }
 
@@ -2963,10 +2972,11 @@
       if (candidateMode) {
         els.introStart.addEventListener("click", startCandidateAssessment);
         els.introName.addEventListener("focus", preloadQuizAssets, { once: true });
+        els.introPhone.addEventListener("focus", preloadQuizAssets, { once: true });
         window.setTimeout(preloadQuizAssets, 1200);
-        els.introName.addEventListener("keydown", event => {
+        [els.introName, els.introPhone].forEach(input => input.addEventListener("keydown", event => {
           if (event.key === "Enter") startCandidateAssessment();
-        });
+        }));
       }
       window.addEventListener("pagehide", flushSave);
     }
@@ -2984,18 +2994,52 @@
       });
     }
 
-    function startCandidateAssessment() {
+    function normalizePhoneInput(value) {
+      return String(value || "").replace(/[^\d]/g, "").replace(/^86(?=\d{11}$)/, "");
+    }
+
+    async function startCandidateAssessment() {
       const name = els.introName.value.trim();
+      const phone = normalizePhoneInput(els.introPhone.value);
       if (!name) {
-        els.introError.textContent = "请先填写姓名";
+        els.introError.textContent = "??????";
         els.introName.focus();
         return;
       }
+      if (phone.length < 6) {
+        els.introError.textContent = "??????????";
+        els.introPhone.focus();
+        return;
+      }
       els.introError.textContent = "";
+      els.introStart.disabled = true;
+      els.introStart.textContent = "????...";
+      let authData;
+      try {
+        const response = await fetch(AUTH_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, phone })
+        });
+        authData = await response.json().catch(() => ({}));
+        if (!response.ok || !authData.ok) throw new Error(authData.error || "????????????????");
+      } catch (error) {
+        els.introError.textContent = error.message || "????????????????";
+        els.introStart.disabled = false;
+        els.introStart.textContent = "????";
+        return;
+      }
+      els.introStart.disabled = false;
+      els.introStart.textContent = "????";
       const previousName = els.name.value.trim();
       const hasProgress = Object.keys(state.answers).length > 0;
-      const shouldResume = hasProgress && (!previousName || previousName === name);
+      const isCompletedDraft = Object.keys(state.answers).length >= state.questions.length;
+      const shouldResume = hasProgress && !isCompletedDraft && (!previousName || previousName === name) && state.candidateId === authData.candidate.id;
       els.name.value = name;
+      els.role.value = authData.candidate.role || els.role.value;
+      state.candidateToken = authData.token;
+      state.candidateId = authData.candidate.id;
+      state.candidatePhone = phone;
       if (!shouldResume) {
         state.answers = {};
         state.index = 0;
@@ -3285,6 +3329,7 @@
       }
       return {
         id: state.submissionId,
+        candidateToken: state.candidateToken,
         submittedAt: new Date().toISOString(),
         info: {
           name: els.name.value,
@@ -3315,13 +3360,13 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        if (!response.ok) throw new Error("submit failed");
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "submit failed");
         saveSubmittedRecord(data.submission || payload);
         state.submissionStatus = "测评结果已提交给 HR。";
       } catch (error) {
         state.submissionKey = "";
-        state.submissionStatus = "未连接到同步服务，请联系 HR 确认链接。";
+        state.submissionStatus = error.message || "未连接到同步服务，请联系 HR 确认链接。";
       }
       updateSubmitStatus();
     }
@@ -3539,8 +3584,12 @@
       state.submissionId = "";
       state.submissionKey = "";
       state.submissionStatus = "";
+      state.candidateToken = "";
+      state.candidateId = "";
+      state.candidatePhone = "";
       [els.name, els.role, els.years, els.open].forEach(input => input.value = "");
       if (els.introName) els.introName.value = "";
+      if (els.introPhone) els.introPhone.value = "";
       els.date.valueAsDate = new Date();
       localStorage.removeItem(DRAFT_KEY);
       if (candidateMode) document.body.dataset.gate = "intro";
@@ -3568,6 +3617,9 @@
         submissionId: state.submissionId,
         submissionKey: state.submissionKey,
         submissionStatus: state.submissionStatus,
+        candidateToken: state.candidateToken,
+        candidateId: state.candidateId,
+        candidatePhone: state.candidatePhone,
         updatedAt: new Date().toISOString(),
         info: { name: els.name.value, role: els.role.value, years: els.years.value, date: els.date.value, open: els.open.value }
       }));
@@ -3585,6 +3637,9 @@
         state.submissionId = draft.submissionId || "";
         state.submissionKey = draft.submissionKey || "";
         state.submissionStatus = draft.submissionStatus || "";
+        state.candidateToken = draft.candidateToken || "";
+        state.candidateId = draft.candidateId || "";
+        state.candidatePhone = draft.candidatePhone || "";
         if (draft.gate) document.body.dataset.gate = draft.gate;
         const info = draft.info || {};
         els.name.value = info.name || "";
