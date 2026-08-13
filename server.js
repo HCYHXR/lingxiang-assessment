@@ -13,6 +13,15 @@ const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "";
 const tokenSecret = process.env.CANDIDATE_TOKEN_SECRET || hrKey || "lingxiang-local-token-secret";
 const candidateVersion = "4049";
+const hrVersion = "6001";
+const hrRoleKey = id => crypto.createHmac("sha256", hrKey || tokenSecret).update(`hr:${id}`).digest("hex").slice(0, 32);
+const hrUsers = [
+  { id: "admin", name: "管理员", role: "admin", key: process.env.HR_KEY || "m2-hr-2026" },
+  { id: "li", name: "李女士", role: "hr", key: process.env.HR_LI_KEY || hrRoleKey("li") },
+  { id: "weng", name: "翁女士", role: "hr", key: process.env.HR_WENG_KEY || hrRoleKey("weng") },
+  { id: "hou", name: "侯女士", role: "hr", key: process.env.HR_HOU_KEY || hrRoleKey("hou") },
+  { id: "wang", name: "王女士", role: "hr", key: process.env.HR_WANG_KEY || hrRoleKey("wang") },
+];
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -73,9 +82,10 @@ async function readStore() {
     return {
       submissions: Array.isArray(parsed.submissions) ? parsed.submissions : [],
       candidates: Array.isArray(parsed.candidates) ? parsed.candidates : [],
+      jobOwners: parsed.jobOwners && typeof parsed.jobOwners === "object" ? parsed.jobOwners : {},
     };
   } catch (error) {
-    if (error.code === "ENOENT") return { submissions: [], candidates: [] };
+    if (error.code === "ENOENT") return { submissions: [], candidates: [], jobOwners: {} };
     throw error;
   }
 }
@@ -85,6 +95,7 @@ async function writeStore(store) {
   await fs.writeFile(dataFile, JSON.stringify({
     submissions: Array.isArray(store.submissions) ? store.submissions : [],
     candidates: Array.isArray(store.candidates) ? store.candidates : [],
+    jobOwners: store.jobOwners && typeof store.jobOwners === "object" ? store.jobOwners : {},
   }, null, 2), "utf8");
 }
 
@@ -145,9 +156,39 @@ function cleanAnswers(answers) {
   return cleaned;
 }
 
+function getHrUser(url) {
+  const key = url.searchParams.get("key") || "";
+  if (!hrKey && !key) return hrUsers[0];
+  return hrUsers.find(user => user.key && user.key === key) || null;
+}
+
 function isAuthorized(url) {
-  if (!hrKey) return true;
-  return url.searchParams.get("key") === hrKey;
+  return Boolean(getHrUser(url));
+}
+
+function isAdmin(user) {
+  return user?.role === "admin";
+}
+
+function jobKey(value) {
+  return normalizeName(value).toLowerCase();
+}
+
+function candidateOwnerId(candidate, store) {
+  return store.jobOwners[jobKey(candidate.role)] || candidate.ownerId || "";
+}
+
+function canViewCandidate(user, candidate, store) {
+  return isAdmin(user) || candidateOwnerId(candidate, store) === user?.id;
+}
+
+function canViewSubmission(user, submission, store) {
+  const candidate = store.candidates.find(item => item.id === submission.candidateId);
+  return candidate ? canViewCandidate(user, candidate, store) : isAdmin(user);
+}
+
+function publicHrUser(user) {
+  return { id: user.id, name: user.name, role: user.role };
 }
 
 function publicCandidate(candidate) {
@@ -202,22 +243,28 @@ async function handleCandidateAuth(req, res) {
   sendJson(res, 200, { ok: true, token, candidate: publicCandidate(candidate) });
 }
 
-async function handleCandidateList(req, res) {
+async function handleCandidateList(req, res, user) {
   const store = await readStore();
   const submissionsById = new Map(store.submissions.map(item => [item.id, item]));
   const candidates = store.candidates
+    .filter(candidate => canViewCandidate(user, candidate, store))
     .map(candidate => {
       const submission = submissionsById.get(candidate.submissionId);
       return {
         ...publicCandidate(candidate),
+        ownerId: candidateOwnerId(candidate, store),
         answerCount: submission ? submission.answerCount : 0,
       };
     })
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-  sendJson(res, 200, { ok: true, candidates });
+  sendJson(res, 200, { ok: true, candidates, currentUser: publicHrUser(user), users: hrUsers.map(publicHrUser), jobOwners: store.jobOwners });
 }
 
-async function handleCandidateUpsert(req, res) {
+async function handleCandidateUpsert(req, res, user) {
+  if (!isAdmin(user)) {
+    sendJson(res, 403, { ok: false, error: "仅管理员可以录入候选人名单" });
+    return;
+  }
   const payload = JSON.parse(await readBody(req) || "{}");
   const rows = Array.isArray(payload.candidates) ? payload.candidates : [payload];
   const store = await readStore();
@@ -250,6 +297,7 @@ async function handleCandidateUpsert(req, res) {
     candidate.phoneHash = hash;
     candidate.role = cleanText(row.role);
     candidate.note = cleanText(row.note, "").slice(0, 500);
+    candidate.ownerId = cleanText(row.ownerId || "");
     candidate.updatedAt = now;
     saved.push(publicCandidate(candidate));
   });
@@ -259,11 +307,15 @@ async function handleCandidateUpsert(req, res) {
   sendJson(res, 200, { ok: true, candidates: saved, skipped });
 }
 
-async function handleCandidateReset(req, res, id) {
+async function handleCandidateReset(req, res, id, user) {
   const store = await readStore();
   const candidate = store.candidates.find(item => item.id === id);
   if (!candidate) {
     sendJson(res, 404, { ok: false, error: "候选人不存在" });
+    return;
+  }
+  if (!canViewCandidate(user, candidate, store)) {
+    sendJson(res, 403, { ok: false, error: "无权操作其他 HR 负责的候选人" });
     return;
   }
   candidate.status = "invited";
@@ -273,6 +325,38 @@ async function handleCandidateReset(req, res, id) {
   candidate.updatedAt = new Date().toISOString();
   await writeStore(store);
   sendJson(res, 200, { ok: true, candidate: publicCandidate(candidate) });
+}
+
+async function handleJobOwners(req, res, user) {
+  if (!isAdmin(user)) {
+    sendJson(res, 403, { ok: false, error: "仅管理员可以分配岗位负责人" });
+    return;
+  }
+  const payload = JSON.parse(await readBody(req) || "{}");
+  const role = cleanText(payload.role);
+  const ownerId = cleanText(payload.ownerId);
+  if (!role) {
+    sendJson(res, 400, { ok: false, error: "缺少岗位名称" });
+    return;
+  }
+  if (ownerId && !hrUsers.some(item => item.id === ownerId && item.role === "hr")) {
+    sendJson(res, 400, { ok: false, error: "岗位负责人无效" });
+    return;
+  }
+  const store = await readStore();
+  const key = jobKey(role);
+  if (ownerId) store.jobOwners[key] = ownerId;
+  else delete store.jobOwners[key];
+  await writeStore(store);
+  sendJson(res, 200, { ok: true, jobOwners: store.jobOwners });
+}
+
+async function handleSubmissionList(req, res, user) {
+  const store = await readStore();
+  const submissions = store.submissions
+    .filter(item => canViewSubmission(user, item, store))
+    .sort((a, b) => String(b.receivedAt || b.submittedAt).localeCompare(String(a.receivedAt || a.submittedAt)));
+  sendJson(res, 200, { ok: true, submissions, currentUser: publicHrUser(user), users: hrUsers.map(publicHrUser), jobOwners: store.jobOwners });
 }
 
 async function handleSubmission(req, res) {
@@ -341,6 +425,12 @@ async function serveStatic(req, res) {
     res.end();
     return;
   }
+  if (url.pathname === "/hr" && url.searchParams.get("v") !== hrVersion) {
+    url.searchParams.set("v", hrVersion);
+    res.writeHead(302, withCors({ Location: `${url.pathname}?${url.searchParams.toString()}` }));
+    res.end();
+    return;
+  }
   if (url.pathname === "/hr" && !isAuthorized(url)) {
     res.writeHead(401, withCors({ "Content-Type": "text/html; charset=utf-8" }));
     res.end(`<!doctype html><meta charset="utf-8"><title>HR访问受限</title><body style="font-family:Microsoft YaHei,Arial,sans-serif;background:#eef6ee;color:#182230;padding:48px;"><h1>HR访问受限</h1><p>请使用带有 HR key 的后台链接访问。</p></body>`);
@@ -404,13 +494,12 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (url.pathname === "/api/submissions" && req.method === "GET") {
-      if (!isAuthorized(url)) {
+      const user = getHrUser(url);
+      if (!user) {
         sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
         return;
       }
-      const store = await readStore();
-      store.submissions.sort((a, b) => String(b.receivedAt || b.submittedAt).localeCompare(String(a.receivedAt || a.submittedAt)));
-      sendJson(res, 200, store);
+      await handleSubmissionList(req, res, user);
       return;
     }
     if (url.pathname === "/api/submissions" && req.method === "POST") {
@@ -418,28 +507,40 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (url.pathname === "/api/candidates" && req.method === "GET") {
-      if (!isAuthorized(url)) {
+      const user = getHrUser(url);
+      if (!user) {
         sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
         return;
       }
-      await handleCandidateList(req, res);
+      await handleCandidateList(req, res, user);
       return;
     }
     if (url.pathname === "/api/candidates" && req.method === "POST") {
-      if (!isAuthorized(url)) {
+      const user = getHrUser(url);
+      if (!user) {
         sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
         return;
       }
-      await handleCandidateUpsert(req, res);
+      await handleCandidateUpsert(req, res, user);
+      return;
+    }
+    if (url.pathname === "/api/job-owners" && req.method === "POST") {
+      const user = getHrUser(url);
+      if (!user) {
+        sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
+        return;
+      }
+      await handleJobOwners(req, res, user);
       return;
     }
     const resetMatch = url.pathname.match(/^\/api\/candidates\/([^/]+)\/reset$/);
     if (resetMatch && req.method === "POST") {
-      if (!isAuthorized(url)) {
+      const user = getHrUser(url);
+      if (!user) {
         sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
         return;
       }
-      await handleCandidateReset(req, res, decodeURIComponent(resetMatch[1]));
+      await handleCandidateReset(req, res, decodeURIComponent(resetMatch[1]), user);
       return;
     }
 

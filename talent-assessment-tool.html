@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>游戏公司 HR 人才测评工具</title>
+  <title>灵相测评-HR后台</title>
   <style>
     :root {
       --ink: #182230;
@@ -151,6 +151,24 @@
       display: block;
       padding: 0;
     }
+    body[data-mode="hr"] .hr-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      border-bottom: 3px solid #2c2c2c;
+      padding: 8px 4px 12px;
+      margin-bottom: 22px;
+    }
+    .hr-topbar-title { margin: 0; font-size: 28px; font-weight: 900; color: #171717; }
+    .hr-user-badge { text-align: center; min-width: 150px; }
+    .hr-user-name { display: inline-block; border: 1px solid #6d6d6d; border-radius: 999px; padding: 7px 26px; font-size: 19px; font-weight: 900; background: #fff; }
+    .hr-user-scope { display: block; margin-top: 5px; color: #555; font-size: 12px; font-weight: 800; }
+    .hr-job-tabs { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin: 24px 0 18px; }
+    .hr-job-tab { border: 1px solid #a8a8a8; border-radius: 999px; background: #fff; padding: 9px 25px; font-size: 17px; font-weight: 900; cursor: pointer; }
+    .hr-job-tab.active { background: #8fc9e8; border-color: #4f9ac2; }
+    .hr-job-tab.unassigned { border-style: dashed; color: #757575; }
+    .hr-permission-note { color: #6b7280; font-size: 12px; font-weight: 800; margin: -6px 0 15px; }
     .floating-tabs {
       display: none;
       position: fixed;
@@ -493,7 +511,8 @@
     .candidate-roster-status { border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 900; white-space: nowrap; background: #f0f2f5; color: #53606f; }
     .candidate-roster-status.started { background: #fff6db; color: #996100; }
     .candidate-roster-status.submitted { background: #e8f4f1; color: #166270; }
-    .candidate-roster-actions { display: flex; gap: 6px; align-items: center; }
+    .candidate-roster-actions { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
+    .candidate-owner-select { min-height: 34px; border: 1px solid #aebfad; border-radius: 6px; background: #fff; font-weight: 800; padding: 0 8px; }
     @media (max-width: 860px) {
       .candidate-gate-form,
       .candidate-gate-bulk,
@@ -542,6 +561,7 @@
       cursor: pointer;
       color: #25323a;
       padding: 0 10px;
+      white-space: nowrap;
     }
     .hr-action:hover { background: #fff; border-color: #6f8f75; }
     .hr-candidate-line,
@@ -2465,12 +2485,13 @@
     const API_ORIGIN = location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787";
     const SYNC_API = `${API_ORIGIN}/api/submissions${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
     const CANDIDATES_API = `${API_ORIGIN}/api/candidates${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
-    const SUBMISSION_CACHE_KEY = "talentHrSubmissionCache";
+    const SUBMISSION_CACHE_KEY = `talentHrSubmissionCache:${HR_ACCESS_KEY || "local-admin"}`;
+    const DRAFT_STORAGE_KEY = `talentAssessmentDraft:${HR_ACCESS_KEY || "local"}`;
     const candidateMode = new URLSearchParams(window.location.search).has("candidate");
     const hrMode = location.pathname === "/hr" || new URLSearchParams(window.location.search).has("hr");
     if (candidateMode) document.body.dataset.mode = "candidate";
     if (hrMode) document.body.dataset.mode = "hr";
-    const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], candidates: [], activeSubmissionId: "", syncReady: false, rosterReady: false };
+    const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], candidates: [], activeSubmissionId: "", syncReady: false, rosterReady: false, currentHr: null, hrUsers: [], jobOwners: {}, selectedJob: "全部岗位" };
     let saveTimer = 0;
     let answerAnimFrameA = 0;
     let answerAnimFrameB = 0;
@@ -2512,8 +2533,7 @@
         state.questions = EMBEDDED_QUESTIONS;
       }
       els.date.valueAsDate = new Date();
-      restore();
-      restoreCachedSubmissions();
+      if (!hrMode) restore();
       state.index = 0;
       renderJump();
       render();
@@ -2808,6 +2828,7 @@
     }
 
     function renderHrReport() {
+      if (state.currentHr?.role === "hr" && state.selectedJob === "全部岗位") state.selectedJob = "我的岗位";
       const result = calculate();
       const profile = profiles[result.primary];
       const topBigFive = Object.entries(result.bigFive).sort((a, b) => b[1] - a[1])[0];
@@ -2835,7 +2856,25 @@
           </ul>
         </section>
       `).join("");
+      const visibleRoles = [...new Set([
+        ...state.candidates.map(item => item.role).filter(Boolean),
+        ...state.submissions.map(item => item.info?.role).filter(Boolean)
+      ])];
+      const jobTabs = state.currentHr?.role === "admin"
+        ? ["全部岗位", ...visibleRoles]
+        : ["我的岗位", ...visibleRoles];
       els.reportView.innerHTML = `
+        <header class="hr-topbar">
+          <h1 class="hr-topbar-title">人才测评工具-HR后台</h1>
+          <div class="hr-user-badge">
+            <span class="hr-user-name">${escapeHtml(state.currentHr?.name || "HR")}</span>
+            <span class="hr-user-scope">${state.currentHr?.role === "admin" ? "可查看全部岗位权限" : "仅开放负责的岗位权限"}</span>
+          </div>
+        </header>
+        <div class="hr-job-tabs" aria-label="岗位筛选">
+          ${jobTabs.map(role => `<button class="hr-job-tab ${state.selectedJob === role ? "active" : ""} ${role === "未分配岗位" ? "unassigned" : ""}" data-job-filter="${escapeHtml(role)}" type="button">${escapeHtml(role)}</button>`).join("")}
+        </div>
+        <div class="hr-permission-note">${state.currentHr?.role === "admin" ? "管理员视角：可录入候选人、分配岗位负责人并查看全部报告。" : "当前为个人视角：只显示你负责岗位的候选人和报告。"}</div>
         ${renderCandidateGateDock()}
         ${renderSubmissionDock()}
         <article class="hr-sheet">
@@ -2919,6 +2958,12 @@
       `;
       bindSubmissionDock();
       bindCandidateGateDock();
+      els.reportView.querySelectorAll("[data-job-filter]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.selectedJob = button.dataset.jobFilter;
+          renderHrReport();
+        });
+      });
       els.reportView.querySelectorAll("[data-hr-action]").forEach(button => {
         button.addEventListener("click", () => {
           const action = button.dataset.hrAction;
@@ -2938,14 +2983,16 @@
     }
 
     function renderCandidateGateDock() {
-      const rows = state.candidates.length
-        ? state.candidates.map(item => `
+      const filteredCandidates = filterHrItems(state.candidates, item => item.role);
+      const rows = filteredCandidates.length
+        ? filteredCandidates.map(item => `
           <div class="candidate-roster-item">
             <span>
               <span class="submission-name">${escapeHtml(item.name || "-")}</span>
               <span class="submission-meta">${escapeHtml(item.phoneMasked || "-")} · ${escapeHtml(item.role || "未填写岗位")} · ${escapeHtml(item.note || "")}</span>
             </span>
             <span class="candidate-roster-actions">
+              ${state.currentHr?.role === "admin" ? `<select class="candidate-owner-select" data-owner-candidate="${escapeHtml(item.id)}" aria-label="岗位负责人"><option value="">未分配</option>${state.hrUsers.filter(user => user.role === "hr").map(user => `<option value="${escapeHtml(user.id)}" ${item.ownerId === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}</select>` : ""}
               <span class="candidate-roster-status ${escapeHtml(item.status || "invited")}">${candidateStatusText(item.status)}</span>
               ${item.status === "submitted" ? `<button class="hr-action" data-candidate-reset="${escapeHtml(item.id)}" type="button">重置资格</button>` : ""}
             </span>
@@ -2963,7 +3010,7 @@
               <button class="hr-action" data-candidate-action="refresh" type="button">刷新名单</button>
             </div>
           </div>
-          <div class="candidate-gate-form">
+          ${state.currentHr?.role === "admin" ? `<div class="candidate-gate-form">
             <input id="gateName" placeholder="姓名">
             <input id="gatePhone" placeholder="手机号">
             <input id="gateRole" placeholder="应聘岗位/备注">
@@ -2972,7 +3019,7 @@
           <div class="candidate-gate-bulk">
             <textarea id="gateBulk" placeholder="批量粘贴：每行一个候选人，例如：张三 13800000000 HRBP"></textarea>
             <button class="hr-action" data-candidate-action="bulk" type="button">批量导入</button>
-          </div>
+          </div>` : ""}
           <div class="candidate-roster-list">${rows}</div>
         </section>
       `;
@@ -2988,6 +3035,19 @@
       els.reportView.querySelectorAll("[data-candidate-reset]").forEach(button => {
         button.addEventListener("click", () => resetCandidate(button.dataset.candidateReset));
       });
+      els.reportView.querySelectorAll("[data-owner-candidate]").forEach(select => {
+        select.addEventListener("change", () => assignCandidateOwner(select.dataset.ownerCandidate, select.value));
+      });
+    }
+
+    function filterHrItems(items, roleGetter) {
+      if (!state.currentHr || state.currentHr.role === "admin") {
+        if (!state.selectedJob || state.selectedJob === "全部岗位") return items;
+      } else if (state.selectedJob === "我的岗位") {
+        return items;
+      }
+      if (!state.selectedJob || state.selectedJob === "全部岗位" || state.selectedJob === "我的岗位") return items;
+      return items.filter(item => roleGetter(item) === state.selectedJob);
     }
 
     async function refreshCandidates({ silent = false } = {}) {
@@ -2996,8 +3056,16 @@
         const response = await fetch(CANDIDATES_API, { cache: "no-store" });
         if (!response.ok) throw new Error("candidate roster unavailable");
         const data = await response.json();
+        const hadHrIdentity = Boolean(state.currentHr);
         state.candidates = Array.isArray(data.candidates) ? data.candidates : [];
+        state.currentHr = data.currentUser || state.currentHr;
+        state.hrUsers = Array.isArray(data.users) ? data.users : state.hrUsers;
+        state.jobOwners = data.jobOwners || state.jobOwners;
         state.rosterReady = true;
+        if (!hadHrIdentity) {
+          renderHrReport();
+          return;
+        }
         updateCandidateGateDock();
         if (!silent) showToast("已刷新候选人名单");
       } catch (error) {
@@ -3058,6 +3126,29 @@
       }
     }
 
+    async function assignCandidateOwner(id, ownerId) {
+      const candidate = state.candidates.find(item => item.id === id);
+      if (!candidate || !candidate.role) {
+        showToast("请先填写候选人岗位");
+        return;
+      }
+      try {
+        const response = await fetch(`${API_ORIGIN}/api/job-owners${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: candidate.role, ownerId })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || "分配失败");
+        state.jobOwners = data.jobOwners || {};
+        state.candidates = state.candidates.map(item => item.role === candidate.role ? { ...item, ownerId } : item);
+        renderHrReport();
+        showToast(`已将 ${candidate.role} 分配给 ${state.hrUsers.find(user => user.id === ownerId)?.name || "未分配"}`);
+      } catch (error) {
+        showToast(error.message || "岗位负责人分配失败");
+      }
+    }
+
     async function resetCandidate(id) {
       try {
         const resetUrl = `${API_ORIGIN}/api/candidates/${encodeURIComponent(id)}/reset${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
@@ -3072,8 +3163,9 @@
     }
 
     function renderSubmissionDock() {
-      const rows = state.submissions.length
-        ? state.submissions.map(item => {
+      const filteredSubmissions = filterHrItems(state.submissions, item => item.info?.role);
+      const rows = filteredSubmissions.length
+        ? filteredSubmissions.map(item => {
           const info = item.info || {};
           const active = state.activeSubmissionId === item.id ? "active" : "";
           const time = formatSubmissionTime(item.receivedAt || item.submittedAt);
@@ -3121,7 +3213,18 @@
         const response = await fetch(SYNC_API, { cache: "no-store" });
         if (!response.ok) throw new Error("sync unavailable");
         const data = await response.json();
-        mergeSubmissions(Array.isArray(data.submissions) ? data.submissions : []);
+        const hadHrIdentity = Boolean(state.currentHr);
+        state.submissions = (Array.isArray(data.submissions) ? data.submissions : []).sort((a, b) =>
+          String(b.receivedAt || b.submittedAt || "").localeCompare(String(a.receivedAt || a.submittedAt || ""))
+        );
+        if (state.activeSubmissionId && !state.submissions.some(item => item.id === state.activeSubmissionId)) state.activeSubmissionId = "";
+        state.currentHr = data.currentUser || state.currentHr;
+        state.hrUsers = Array.isArray(data.users) ? data.users : state.hrUsers;
+        state.jobOwners = data.jobOwners || state.jobOwners;
+        if (!hadHrIdentity && state.currentHr) {
+          renderHrReport();
+          return;
+        }
         persistCachedSubmissions();
         state.syncReady = true;
         if (hrMode && state.view === "hr" && state.submissions.length && !state.activeSubmissionId) {
@@ -3132,7 +3235,8 @@
         if (!silent) showToast("已刷新候选人提交记录");
       } catch (error) {
         state.syncReady = false;
-        restoreCachedSubmissions();
+        state.submissions = [];
+        state.activeSubmissionId = "";
         updateSubmissionDock();
         if (!silent) showToast("未连接到同步服务，请先启动本地服务");
       }
@@ -3305,7 +3409,7 @@
       state.index = 0;
       [els.name, els.role, els.years, els.open].forEach(input => input.value = "");
       els.date.valueAsDate = new Date();
-      localStorage.removeItem("talentAssessmentDraft");
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
       setView("answer");
       render();
     }
@@ -3320,7 +3424,7 @@
         clearTimeout(saveTimer);
         saveTimer = 0;
       }
-      localStorage.setItem("talentAssessmentDraft", JSON.stringify({
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
         answers: state.answers,
         info: { name: els.name.value, role: els.role.value, years: els.years.value, date: els.date.value, open: els.open.value }
       }));
@@ -3330,7 +3434,7 @@
 
     function restore() {
       try {
-        const draft = JSON.parse(localStorage.getItem("talentAssessmentDraft") || "{}");
+        const draft = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || "{}");
         state.answers = draft.answers || {};
         state.index = 0;
         const info = draft.info || {};
