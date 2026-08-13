@@ -10,7 +10,7 @@ const dataFile = process.env.DATA_FILE
   : path.join(rootDir, "talent-submissions.json");
 const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0";
-const hrKey = process.env.HR_KEY || "";
+const hrKey = process.env.HR_KEY || "m2-hr-2026";
 const tokenSecret = process.env.CANDIDATE_TOKEN_SECRET || hrKey || "lingxiang-local-token-secret";
 const candidateVersion = "4049";
 const hrVersion = "6001";
@@ -158,7 +158,6 @@ function cleanAnswers(answers) {
 
 function getHrUser(url) {
   const key = url.searchParams.get("key") || "";
-  if (!hrKey && !key) return hrUsers[0];
   return hrUsers.find(user => user.key && user.key === key) || null;
 }
 
