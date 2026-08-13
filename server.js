@@ -13,7 +13,7 @@ const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "m2-hr-2026";
 const tokenSecret = process.env.CANDIDATE_TOKEN_SECRET || hrKey || "lingxiang-local-token-secret";
 const candidateVersion = "4049";
-const hrVersion = "6002";
+const hrVersion = "6003";
 const hrRoleKey = id => crypto.createHmac("sha256", hrKey || tokenSecret).update(`hr:${id}`).digest("hex").slice(0, 32);
 const hrUsers = [
   { id: "admin", name: "管理员", role: "admin", key: process.env.HR_KEY || "m2-hr-2026" },

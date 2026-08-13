@@ -137,7 +137,12 @@
     }
     body[data-mode="hr"] .app {
       width: min(1040px, calc(100% - 32px));
-      padding: 24px 0 48px;
+      margin: 22px auto 48px;
+      padding: 24px 28px 34px;
+      border: 2px solid #8e99a6;
+      border-radius: 12px;
+      background: #f8fafc;
+      box-shadow: 0 18px 44px rgba(31, 55, 80, .10);
     }
     body[data-mode="hr"] .layout {
       display: block;
@@ -169,6 +174,18 @@
     .hr-job-tab.active { background: #b9dcf2; border-color: #4f9ac2; color: #163b58; }
     .hr-job-tab.unassigned { border-style: dashed; color: #757575; }
     .hr-permission-note { color: #6b7280; font-size: 12px; font-weight: 800; margin: -6px 0 15px; }
+    @media (max-width: 720px) {
+      body[data-mode="hr"] .app {
+        width: calc(100% - 16px);
+        margin: 8px auto 24px;
+        padding: 16px 12px 22px;
+        border-radius: 10px;
+      }
+      body[data-mode="hr"] .hr-topbar { align-items: flex-start; }
+      .hr-topbar-title { font-size: 23px; }
+      .hr-user-badge { min-width: 108px; }
+      .hr-user-name { padding: 6px 16px; font-size: 16px; }
+    }
     .floating-tabs {
       display: none;
       position: fixed;
