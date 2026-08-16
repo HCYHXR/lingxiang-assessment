@@ -13,7 +13,7 @@ const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "m2-hr-2026";
 const tokenSecret = process.env.CANDIDATE_TOKEN_SECRET || hrKey || "lingxiang-local-token-secret";
 const candidateVersion = "4049";
-const hrVersion = "6004";
+const hrVersion = "6006";
 const hrRoleKey = id => crypto.createHmac("sha256", hrKey || tokenSecret).update(`hr:${id}`).digest("hex").slice(0, 32);
 const hrUsers = [
   { id: "admin", name: "管理员", role: "admin", key: process.env.HR_KEY || "m2-hr-2026" },
@@ -173,12 +173,36 @@ function jobKey(value) {
   return normalizeName(value).toLowerCase();
 }
 
-function candidateOwnerId(candidate, store) {
-  return store.jobOwners[jobKey(candidate.role)] || candidate.ownerId || "";
+function findHrUser(value) {
+  const normalized = normalizeName(value).toLowerCase();
+  return hrUsers.find(user => user.role === "hr" && (
+    user.id === normalized || normalizeName(user.name).toLowerCase() === normalized
+  )) || null;
+}
+
+function candidateHrId(candidate, store) {
+  const explicit = findHrUser(candidate.hrId || candidate.hrOwner || candidate.ownerId);
+  return explicit?.id || store.jobOwners[jobKey(candidate.role)] || "";
+}
+
+function candidateHrName(candidate, store) {
+  const ownerId = candidateHrId(candidate, store);
+  return hrUsers.find(user => user.id === ownerId)?.name || "未分配";
+}
+
+function requestedHrId(url, user) {
+  if (!isAdmin(user)) return user.id;
+  const value = cleanText(url.searchParams.get("hrId") || "");
+  if (!value || value === "all") return "";
+  return findHrUser(value)?.id || "";
+}
+
+function matchesHrScope(candidate, store, scopeHrId) {
+  return !scopeHrId || candidateHrId(candidate, store) === scopeHrId;
 }
 
 function canViewCandidate(user, candidate, store) {
-  return isAdmin(user) || candidateOwnerId(candidate, store) === user?.id;
+  return isAdmin(user) || candidateHrId(candidate, store) === user?.id;
 }
 
 function canViewSubmission(user, submission, store) {
@@ -190,7 +214,7 @@ function publicHrUser(user) {
   return { id: user.id, name: user.name, role: user.role };
 }
 
-function publicCandidate(candidate) {
+function publicCandidate(candidate, store) {
   return {
     id: candidate.id,
     name: candidate.name,
@@ -203,6 +227,8 @@ function publicCandidate(candidate) {
     startedAt: candidate.startedAt || "",
     submittedAt: candidate.submittedAt || "",
     submissionId: candidate.submissionId || "",
+    hrId: candidateHrId(candidate, store),
+    hrOwner: candidateHrName(candidate, store),
   };
 }
 
@@ -239,31 +265,29 @@ async function handleCandidateAuth(req, res) {
   await writeStore(store);
 
   const token = signToken({ id: candidate.id, phoneHash: candidate.phoneHash, issuedAt: now });
-  sendJson(res, 200, { ok: true, token, candidate: publicCandidate(candidate) });
+  sendJson(res, 200, { ok: true, token, candidate: publicCandidate(candidate, store) });
 }
 
-async function handleCandidateList(req, res, user) {
+async function handleCandidateList(req, res, user, url) {
   const store = await readStore();
+  const scopeHrId = requestedHrId(url, user);
   const submissionsById = new Map(store.submissions.map(item => [item.id, item]));
   const candidates = store.candidates
-    .filter(candidate => canViewCandidate(user, candidate, store))
+    .filter(candidate => canViewCandidate(user, candidate, store) && matchesHrScope(candidate, store, scopeHrId))
     .map(candidate => {
       const submission = submissionsById.get(candidate.submissionId);
       return {
-        ...publicCandidate(candidate),
-        ownerId: candidateOwnerId(candidate, store),
+        ...publicCandidate(candidate, store),
+        ownerId: candidateHrId(candidate, store),
         answerCount: submission ? submission.answerCount : 0,
       };
     })
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-  sendJson(res, 200, { ok: true, candidates, currentUser: publicHrUser(user), users: hrUsers.map(publicHrUser), jobOwners: store.jobOwners });
+  const jobOwners = Object.fromEntries(Object.entries(store.jobOwners).filter(([, ownerId]) => !scopeHrId || ownerId === scopeHrId));
+  sendJson(res, 200, { ok: true, candidates, currentUser: publicHrUser(user), users: hrUsers.map(publicHrUser), jobOwners, scopeHrId: scopeHrId || "all" });
 }
 
 async function handleCandidateUpsert(req, res, user) {
-  if (!isAdmin(user)) {
-    sendJson(res, 403, { ok: false, error: "仅管理员可以录入候选人名单" });
-    return;
-  }
   const payload = JSON.parse(await readBody(req) || "{}");
   const rows = Array.isArray(payload.candidates) ? payload.candidates : [payload];
   const store = await readStore();
@@ -280,6 +304,15 @@ async function handleCandidateUpsert(req, res, user) {
     }
     const hash = phoneHash(phone);
     let candidate = store.candidates.find(item => normalizeName(item.name) === normalizeName(name) && item.phoneHash === hash);
+    if (candidate && !canViewCandidate(user, candidate, store)) {
+      skipped.push({ index, reason: "候选人属于其他 HR" });
+      return;
+    }
+    const requestedOwner = isAdmin(user) ? findHrUser(row.hrId || row.hrOwner || payload.hrId) : user;
+    if (!requestedOwner) {
+      skipped.push({ index, reason: "请选择归属 HR" });
+      return;
+    }
     if (!candidate) {
       candidate = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -296,11 +329,17 @@ async function handleCandidateUpsert(req, res, user) {
     candidate.phoneHash = hash;
     candidate.role = cleanText(row.role);
     candidate.note = cleanText(row.note, "").slice(0, 500);
-    candidate.ownerId = cleanText(row.ownerId || "");
+    candidate.hrId = requestedOwner.id;
+    candidate.hrOwner = requestedOwner.name;
+    candidate.ownerId = requestedOwner.id;
     candidate.updatedAt = now;
-    saved.push(publicCandidate(candidate));
+    saved.push(publicCandidate(candidate, store));
   });
 
+  if (!saved.length && skipped.length) {
+    sendJson(res, 400, { ok: false, error: skipped[0].reason || "候选人保存失败", candidates: [], skipped });
+    return;
+  }
   store.candidates = store.candidates.slice(0, 1000);
   await writeStore(store);
   sendJson(res, 200, { ok: true, candidates: saved, skipped });
@@ -323,7 +362,32 @@ async function handleCandidateReset(req, res, id, user) {
   candidate.submissionId = "";
   candidate.updatedAt = new Date().toISOString();
   await writeStore(store);
-  sendJson(res, 200, { ok: true, candidate: publicCandidate(candidate) });
+  sendJson(res, 200, { ok: true, candidate: publicCandidate(candidate, store) });
+}
+
+async function handleCandidateOwner(req, res, id, user) {
+  if (!isAdmin(user)) {
+    sendJson(res, 403, { ok: false, error: "仅管理员可以调整候选人归属" });
+    return;
+  }
+  const payload = JSON.parse(await readBody(req) || "{}");
+  const owner = findHrUser(payload.hrId || payload.hrOwner);
+  if (!owner) {
+    sendJson(res, 400, { ok: false, error: "请选择有效的归属 HR" });
+    return;
+  }
+  const store = await readStore();
+  const candidate = store.candidates.find(item => item.id === id);
+  if (!candidate) {
+    sendJson(res, 404, { ok: false, error: "候选人不存在" });
+    return;
+  }
+  candidate.hrId = owner.id;
+  candidate.hrOwner = owner.name;
+  candidate.ownerId = owner.id;
+  candidate.updatedAt = new Date().toISOString();
+  await writeStore(store);
+  sendJson(res, 200, { ok: true, candidate: publicCandidate(candidate, store) });
 }
 
 async function handleJobOwners(req, res, user) {
@@ -350,12 +414,19 @@ async function handleJobOwners(req, res, user) {
   sendJson(res, 200, { ok: true, jobOwners: store.jobOwners });
 }
 
-async function handleSubmissionList(req, res, user) {
+async function handleSubmissionList(req, res, user, url) {
   const store = await readStore();
+  const scopeHrId = requestedHrId(url, user);
   const submissions = store.submissions
     .filter(item => canViewSubmission(user, item, store))
+    .map(item => {
+      const candidate = store.candidates.find(entry => entry.id === item.candidateId);
+      return candidate ? { ...item, hrId: candidateHrId(candidate, store), hrOwner: candidateHrName(candidate, store) } : item;
+    })
+    .filter(item => !scopeHrId || item.hrId === scopeHrId)
     .sort((a, b) => String(b.receivedAt || b.submittedAt).localeCompare(String(a.receivedAt || a.submittedAt)));
-  sendJson(res, 200, { ok: true, submissions, currentUser: publicHrUser(user), users: hrUsers.map(publicHrUser), jobOwners: store.jobOwners });
+  const jobOwners = Object.fromEntries(Object.entries(store.jobOwners).filter(([, ownerId]) => !scopeHrId || ownerId === scopeHrId));
+  sendJson(res, 200, { ok: true, submissions, currentUser: publicHrUser(user), users: hrUsers.map(publicHrUser), jobOwners, scopeHrId: scopeHrId || "all" });
 }
 
 async function handleSubmission(req, res) {
@@ -397,6 +468,8 @@ async function handleSubmission(req, res) {
     answers,
     result: payload.result || null,
     answerCount: Object.keys(answers).length,
+    hrId: candidateHrId(candidate, store),
+    hrOwner: candidateHrName(candidate, store),
   };
 
   if (!record.info.name) {
@@ -498,7 +571,7 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
         return;
       }
-      await handleSubmissionList(req, res, user);
+      await handleSubmissionList(req, res, user, url);
       return;
     }
     if (url.pathname === "/api/submissions" && req.method === "POST") {
@@ -511,7 +584,7 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
         return;
       }
-      await handleCandidateList(req, res, user);
+      await handleCandidateList(req, res, user, url);
       return;
     }
     if (url.pathname === "/api/candidates" && req.method === "POST") {
@@ -530,6 +603,16 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       await handleJobOwners(req, res, user);
+      return;
+    }
+    const ownerMatch = url.pathname.match(/^\/api\/candidates\/([^/]+)\/owner$/);
+    if (ownerMatch && req.method === "POST") {
+      const user = getHrUser(url);
+      if (!user) {
+        sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
+        return;
+      }
+      await handleCandidateOwner(req, res, decodeURIComponent(ownerMatch[1]), user);
       return;
     }
     const resetMatch = url.pathname.match(/^\/api\/candidates\/([^/]+)\/reset$/);

@@ -169,9 +169,10 @@
     .hr-user-badge { text-align: center; min-width: 150px; }
     .hr-user-name { display: inline-block; border: 1px solid #6d6d6d; border-radius: 999px; padding: 7px 26px; font-size: 19px; font-weight: 900; background: #fff; }
     .hr-user-scope { display: block; margin-top: 5px; color: #555; font-size: 12px; font-weight: 800; }
-    .hr-job-tabs { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin: 24px 0 18px; }
-    .hr-job-tab { border: 1px solid #a8a8a8; border-radius: 999px; background: #fff; padding: 9px 25px; font-size: 17px; font-weight: 900; cursor: pointer; }
-    .hr-job-tab.active { background: #b9dcf2; border-color: #4f9ac2; color: #163b58; }
+    .hr-scope-select { display: block; width: 100%; min-height: 36px; margin-top: 8px; border: 1px solid #9eabb8; border-radius: 6px; background: #fff; color: #243447; padding: 0 10px; font-weight: 900; }
+    .hr-job-tabs { display: flex; gap: 10px; flex-wrap: nowrap; align-items: center; width: 100%; margin: 24px 0 8px; overflow-x: auto; scrollbar-width: thin; }
+    .hr-job-tab { flex: 1 0 auto; min-width: 104px; border: 1px solid #a8a8a8; border-radius: 999px; background: #fff; padding: 9px 16px; font-size: 16px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+    .hr-job-tab.active { background: #b9dcf2; border-color: #4f9ac2; color: #163b58; font-weight: 900; }
     .hr-job-tab.unassigned { border-style: dashed; color: #757575; }
     .hr-permission-note { color: #6b7280; font-size: 12px; font-weight: 800; margin: -6px 0 15px; }
     @media (max-width: 720px) {
@@ -520,6 +521,7 @@
     .submission-meta { color: #667085; font-size: 13px; font-weight: 800; }
     .submission-badge { border-radius: 999px; background: #e6f1f8; color: #245b7c; padding: 5px 9px; font-size: 12px; font-weight: 900; white-space: nowrap; }
     .candidate-gate-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin: 12px 0; }
+    .candidate-gate-form.admin { grid-template-columns: 1fr 1fr 1fr 150px auto; }
     .candidate-gate-form input { min-height: 40px; }
     .candidate-gate-bulk { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 10px 0 12px; align-items: stretch; }
     .candidate-gate-bulk textarea { min-height: 76px; margin: 0; }
@@ -532,6 +534,7 @@
     .candidate-owner-select { min-height: 34px; border: 1px solid #b7c6d6; border-radius: 6px; background: #fff; font-weight: 800; padding: 0 8px; }
     @media (max-width: 860px) {
       .candidate-gate-form,
+      .candidate-gate-form.admin,
       .candidate-gate-bulk,
       .candidate-roster-item { grid-template-columns: 1fr; }
       .candidate-roster-actions { justify-content: flex-start; flex-wrap: wrap; }
@@ -2487,17 +2490,22 @@
     ];
     const answerGuide = { name: "灵狐", src: "talent_tool_assets/spirit_fox_jade_bright_cutout.png" };
 
-    const HR_ACCESS_KEY = new URLSearchParams(window.location.search).get("key") || "";
+    const pageParams = new URLSearchParams(window.location.search);
+    const candidateMode = pageParams.has("candidate");
+    const directHrFileMode = location.protocol === "file:"
+      && /talent-assessment-tool\.html$/i.test(location.pathname)
+      && !candidateMode;
+    const hrMode = location.pathname === "/hr" || pageParams.has("hr") || directHrFileMode;
+    const HR_ACCESS_KEY = pageParams.get("key") || (directHrFileMode ? "m2-hr-2026" : "");
     const API_ORIGIN = location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787";
     const SYNC_API = `${API_ORIGIN}/api/submissions${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
     const CANDIDATES_API = `${API_ORIGIN}/api/candidates${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
     const SUBMISSION_CACHE_KEY = `talentHrSubmissionCache:${HR_ACCESS_KEY || "local-admin"}`;
     const DRAFT_STORAGE_KEY = `talentAssessmentDraft:${HR_ACCESS_KEY || "local"}`;
-    const candidateMode = new URLSearchParams(window.location.search).has("candidate");
-    const hrMode = location.pathname === "/hr" || new URLSearchParams(window.location.search).has("hr");
+    const HR_JOB_TABS = ["全部岗位", "招聘", "系统策划", "游戏测试", "执行策划", "AI美术（场景）", "特效"];
     if (candidateMode) document.body.dataset.mode = "candidate";
     if (hrMode) document.body.dataset.mode = "hr";
-    const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], candidates: [], activeSubmissionId: "", syncReady: false, rosterReady: false, currentHr: null, hrUsers: [], jobOwners: {}, selectedJob: "全部岗位" };
+    const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], candidates: [], activeSubmissionId: "", syncReady: false, rosterReady: false, currentHr: null, hrUsers: [], jobOwners: {}, selectedJob: "全部岗位", selectedHr: "all" };
     let saveTimer = 0;
     let answerAnimFrameA = 0;
     let answerAnimFrameB = 0;
@@ -2833,8 +2841,45 @@
       if (retest) retest.addEventListener("click", () => setView("answer"));
     }
 
-    function renderHrReport() {
-      if (state.currentHr?.role === "hr" && state.selectedJob === "全部岗位") state.selectedJob = "我的岗位";
+    function selectedHrName() {
+      if (!state.currentHr) return "加载中";
+      if (state.currentHr.role !== "admin") return state.currentHr.name;
+      if (state.selectedHr === "all") return "全部 HR";
+      return state.hrUsers.find(user => user.id === state.selectedHr)?.name || "全部 HR";
+    }
+
+    function scopedHrApi(url) {
+      if (state.currentHr?.role !== "admin" || state.selectedHr === "all") return url;
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}hrId=${encodeURIComponent(state.selectedHr)}`;
+    }
+
+    function normalizeJobKey(value) {
+      return String(value || "").trim().replace(/\s+/g, "").replace(/[()（）]/g, "").toLowerCase();
+    }
+
+    function jobsMatch(value, expected) {
+      return normalizeJobKey(value) === normalizeJobKey(expected);
+    }
+
+    function visibleJobTabs() {
+      if (state.currentHr?.role === "admin") return HR_JOB_TABS;
+      const currentHrId = state.currentHr?.id;
+      const ownedRoles = new Set([
+        ...state.candidates.map(item => item.role),
+        ...state.submissions.map(item => item.info?.role)
+      ].filter(Boolean).map(normalizeJobKey));
+      const permitted = HR_JOB_TABS.slice(1).filter(role => {
+        const key = normalizeJobKey(role);
+        const hasPermission = Object.entries(state.jobOwners).some(([jobRole, ownerId]) =>
+          normalizeJobKey(jobRole) === key && ownerId === currentHrId
+        );
+        return ownedRoles.has(key) || hasPermission;
+      });
+      return ["全部岗位", ...permitted];
+    }
+
+    function renderHrReport({ refresh = true } = {}) {
       const result = calculate();
       const profile = profiles[result.primary];
       const topBigFive = Object.entries(result.bigFive).sort((a, b) => b[1] - a[1])[0];
@@ -2843,6 +2888,8 @@
       const candidateName = escapeHtml(els.name.value || "-");
       const candidateRole = escapeHtml(els.role.value || "-");
       const reportDate = escapeHtml(els.date.value || "-");
+      const activeRecord = state.submissions.find(item => item.id === state.activeSubmissionId);
+      const reportHrOwner = escapeHtml(activeRecord?.hrOwner || state.candidates.find(item => item.submissionId === state.activeSubmissionId)?.hrOwner || "-");
       const openAnswer = escapeHtml(els.open.value || "未填写");
       const traitRows = [
         ["老虎", result.traits.tiger],
@@ -2862,25 +2909,23 @@
           </ul>
         </section>
       `).join("");
-      const visibleRoles = [...new Set([
-        ...state.candidates.map(item => item.role).filter(Boolean),
-        ...state.submissions.map(item => item.info?.role).filter(Boolean)
-      ])];
-      const jobTabs = state.currentHr?.role === "admin"
-        ? ["全部岗位", ...visibleRoles]
-        : ["我的岗位", ...visibleRoles];
+      const jobTabs = visibleJobTabs();
+      if (!jobTabs.includes(state.selectedJob)) state.selectedJob = "全部岗位";
+      const visibleCandidates = filterHrItems(state.candidates, item => item.role);
+      const visibleSubmissions = filterHrItems(state.submissions, item => item.info?.role);
       els.reportView.innerHTML = `
         <header class="hr-topbar">
           <h1 class="hr-topbar-title">人才测评工具-HR后台</h1>
           <div class="hr-user-badge">
             <span class="hr-user-name">${escapeHtml(state.currentHr?.name || "HR")}</span>
             <span class="hr-user-scope">${state.currentHr?.role === "admin" ? "可查看全部岗位权限" : "仅开放负责的岗位权限"}</span>
+            ${state.currentHr?.role === "admin" ? `<select class="hr-scope-select" data-hr-scope aria-label="HR 信息筛选"><option value="all" ${state.selectedHr === "all" ? "selected" : ""}>全部 HR</option>${state.hrUsers.filter(user => user.role === "hr").map(user => `<option value="${escapeHtml(user.id)}" ${state.selectedHr === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}</select>` : ""}
           </div>
         </header>
         <div class="hr-job-tabs" aria-label="岗位筛选">
           ${jobTabs.map(role => `<button class="hr-job-tab ${state.selectedJob === role ? "active" : ""} ${role === "未分配岗位" ? "unassigned" : ""}" data-job-filter="${escapeHtml(role)}" type="button">${escapeHtml(role)}</button>`).join("")}
         </div>
-        <div class="hr-permission-note">${state.currentHr?.role === "admin" ? "管理员视角：可录入候选人、分配岗位负责人并查看全部报告。" : "当前为个人视角：只显示你负责岗位的候选人和报告。"}</div>
+        <div class="hr-permission-note">当前查看：${escapeHtml(selectedHrName())} · ${escapeHtml(state.selectedJob)} · 候选人 ${visibleCandidates.length} 人 · 已提交 ${visibleSubmissions.length} 份。${state.currentHr?.role === "admin" ? " 管理员可切换查看各 HR 数据。" : " 仅显示你负责或录入的数据。"}</div>
         ${renderCandidateGateDock()}
         ${renderSubmissionDock()}
         <article class="hr-sheet">
@@ -2895,7 +2940,7 @@
             </div>
           </header>
 
-          <div class="hr-candidate-line">人选信息：{${candidateName}、${candidateRole}、${reportDate}}</div>
+          <div class="hr-candidate-line">人选信息：{${candidateName}、${candidateRole}、${reportDate}、归属 ${reportHrOwner}}</div>
           <div class="hr-main-type">主类型：{${hrTitle}}</div>
 
           <section class="hr-trait-strip" aria-label="倾向分值">
@@ -2963,11 +3008,10 @@
       `;
       bindSubmissionDock();
       bindCandidateGateDock();
+      const hrScopeSelect = els.reportView.querySelector("[data-hr-scope]");
+      if (hrScopeSelect) hrScopeSelect.addEventListener("change", () => changeHrScope(hrScopeSelect.value));
       els.reportView.querySelectorAll("[data-job-filter]").forEach(button => {
-        button.addEventListener("click", () => {
-          state.selectedJob = button.dataset.jobFilter;
-          renderHrReport();
-        });
+        button.addEventListener("click", () => changeJobScope(button.dataset.jobFilter));
       });
       els.reportView.querySelectorAll("[data-hr-action]").forEach(button => {
         button.addEventListener("click", () => {
@@ -2979,8 +3023,10 @@
           window.print();
         });
       });
-      refreshSubmissions({ silent: true });
-      refreshCandidates({ silent: true });
+      if (refresh) {
+        refreshSubmissions({ silent: true });
+        refreshCandidates({ silent: true });
+      }
     }
 
     function candidateStatusText(status) {
@@ -2994,10 +3040,10 @@
           <div class="candidate-roster-item">
             <span>
               <span class="submission-name">${escapeHtml(item.name || "-")}</span>
-              <span class="submission-meta">${escapeHtml(item.phoneMasked || "-")} · ${escapeHtml(item.role || "未填写岗位")} · ${escapeHtml(item.note || "")}</span>
+              <span class="submission-meta">${escapeHtml(item.phoneMasked || "-")} · ${escapeHtml(item.role || "未填写岗位")} · 归属 ${escapeHtml(item.hrOwner || "未分配")} · ${escapeHtml(item.note || "")}</span>
             </span>
             <span class="candidate-roster-actions">
-              ${state.currentHr?.role === "admin" ? `<select class="candidate-owner-select" data-owner-candidate="${escapeHtml(item.id)}" aria-label="岗位负责人"><option value="">未分配</option>${state.hrUsers.filter(user => user.role === "hr").map(user => `<option value="${escapeHtml(user.id)}" ${item.ownerId === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}</select>` : ""}
+              ${state.currentHr?.role === "admin" ? `<select class="candidate-owner-select" data-owner-candidate="${escapeHtml(item.id)}" aria-label="候选人归属 HR">${state.hrUsers.filter(user => user.role === "hr").map(user => `<option value="${escapeHtml(user.id)}" ${item.hrId === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}</select>` : ""}
               <span class="candidate-roster-status ${escapeHtml(item.status || "invited")}">${candidateStatusText(item.status)}</span>
               ${item.status === "submitted" ? `<button class="hr-action" data-candidate-reset="${escapeHtml(item.id)}" type="button">重置资格</button>` : ""}
             </span>
@@ -3015,14 +3061,15 @@
               <button class="hr-action" data-candidate-action="refresh" type="button">刷新名单</button>
             </div>
           </div>
-          ${state.currentHr?.role === "admin" ? `<div class="candidate-gate-form">
+          ${state.currentHr ? `<div class="candidate-gate-form ${state.currentHr.role === "admin" ? "admin" : ""}">
             <input id="gateName" placeholder="姓名">
             <input id="gatePhone" placeholder="手机号">
             <input id="gateRole" placeholder="应聘岗位/备注">
+            ${state.currentHr.role === "admin" ? `<select id="gateHrOwner" class="candidate-owner-select" aria-label="新增候选人归属 HR"><option value="">选择归属 HR</option>${state.hrUsers.filter(user => user.role === "hr").map(user => `<option value="${escapeHtml(user.id)}" ${state.selectedHr === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}</select>` : ""}
             <button class="hr-action" data-candidate-action="add" type="button">添加</button>
           </div>
           <div class="candidate-gate-bulk">
-            <textarea id="gateBulk" placeholder="批量粘贴：每行一个候选人，例如：张三 13800000000 HRBP"></textarea>
+            <textarea id="gateBulk" placeholder="批量粘贴：每行一个候选人，例如：张三 13800000000 HRBP${state.currentHr.role === "admin" ? "；统一使用上方选择的归属 HR" : "；自动归属当前 HR"}"></textarea>
             <button class="hr-action" data-candidate-action="bulk" type="button">批量导入</button>
           </div>` : ""}
           <div class="candidate-roster-list">${rows}</div>
@@ -3046,32 +3093,74 @@
     }
 
     function filterHrItems(items, roleGetter) {
-      if (!state.currentHr || state.currentHr.role === "admin") {
-        if (!state.selectedJob || state.selectedJob === "全部岗位") return items;
-      } else if (state.selectedJob === "我的岗位") {
-        return items;
+      if (!state.selectedJob || state.selectedJob === "全部岗位") return items;
+      return items.filter(item => jobsMatch(roleGetter(item), state.selectedJob));
+    }
+
+    function applyHrContext(data) {
+      state.currentHr = data.currentUser || state.currentHr;
+      state.hrUsers = Array.isArray(data.users) ? data.users : state.hrUsers;
+      state.jobOwners = data.jobOwners || state.jobOwners;
+      if (state.currentHr?.role !== "admin") state.selectedHr = state.currentHr.id;
+      else if (data.scopeHrId) state.selectedHr = data.scopeHrId;
+    }
+
+    function changeHrScope(hrId) {
+      if (state.currentHr?.role !== "admin") return;
+      state.selectedHr = hrId || "all";
+      state.selectedJob = "全部岗位";
+      state.activeSubmissionId = "";
+      state.candidates = [];
+      state.submissions = [];
+      state.answers = {};
+      els.name.value = "";
+      els.role.value = "";
+      els.years.value = "";
+      els.open.value = "";
+      els.date.valueAsDate = new Date();
+      renderHrReport();
+    }
+
+    function clearLoadedReport() {
+      state.activeSubmissionId = "";
+      state.answers = {};
+      els.name.value = "";
+      els.role.value = "";
+      els.years.value = "";
+      els.open.value = "";
+      els.date.valueAsDate = new Date();
+    }
+
+    function changeJobScope(role) {
+      state.selectedJob = role;
+      const visibleSubmissions = filterHrItems(state.submissions, item => item.info?.role);
+      if (visibleSubmissions.some(item => item.id === state.activeSubmissionId)) {
+        renderHrReport({ refresh: false });
+        return;
       }
-      if (!state.selectedJob || state.selectedJob === "全部岗位" || state.selectedJob === "我的岗位") return items;
-      return items.filter(item => roleGetter(item) === state.selectedJob);
+      if (visibleSubmissions.length) {
+        loadSubmission(visibleSubmissions[0].id, { silent: true, refresh: false });
+        return;
+      }
+      clearLoadedReport();
+      renderHrReport({ refresh: false });
     }
 
     async function refreshCandidates({ silent = false } = {}) {
       if (candidateMode || state.view !== "hr") return;
       try {
-        const response = await fetch(CANDIDATES_API, { cache: "no-store" });
+        const response = await fetch(scopedHrApi(CANDIDATES_API), { cache: "no-store" });
         if (!response.ok) throw new Error("candidate roster unavailable");
         const data = await response.json();
         const hadHrIdentity = Boolean(state.currentHr);
         state.candidates = Array.isArray(data.candidates) ? data.candidates : [];
-        state.currentHr = data.currentUser || state.currentHr;
-        state.hrUsers = Array.isArray(data.users) ? data.users : state.hrUsers;
-        state.jobOwners = data.jobOwners || state.jobOwners;
+        applyHrContext(data);
         state.rosterReady = true;
         if (!hadHrIdentity) {
           renderHrReport();
           return;
         }
-        updateCandidateGateDock();
+        renderHrReport({ refresh: false });
         if (!silent) showToast("已刷新候选人名单");
       } catch (error) {
         state.rosterReady = false;
@@ -3091,11 +3180,16 @@
       const name = els.reportView.querySelector("#gateName")?.value.trim();
       const phone = els.reportView.querySelector("#gatePhone")?.value.trim();
       const role = els.reportView.querySelector("#gateRole")?.value.trim();
+      const hrId = state.currentHr?.role === "admin" ? els.reportView.querySelector("#gateHrOwner")?.value : state.currentHr?.id;
       if (!name || !phone) {
         showToast("请填写候选人姓名和手机号");
         return;
       }
-      await saveCandidates([{ name, phone, role }]);
+      if (!hrId) {
+        showToast("请选择候选人归属 HR");
+        return;
+      }
+      await saveCandidates([{ name, phone, role, hrId }]);
     }
 
     function parseCandidateBulk(text) {
@@ -3112,7 +3206,12 @@
         showToast("请先粘贴候选人名单");
         return;
       }
-      await saveCandidates(rows);
+      const hrId = state.currentHr?.role === "admin" ? els.reportView.querySelector("#gateHrOwner")?.value : state.currentHr?.id;
+      if (!hrId) {
+        showToast("请选择批量导入候选人的归属 HR");
+        return;
+      }
+      await saveCandidates(rows.map(row => ({ ...row, hrId })));
     }
 
     async function saveCandidates(candidates) {
@@ -3133,22 +3232,22 @@
 
     async function assignCandidateOwner(id, ownerId) {
       const candidate = state.candidates.find(item => item.id === id);
-      if (!candidate || !candidate.role) {
-        showToast("请先填写候选人岗位");
+      if (!candidate || !ownerId) {
+        showToast("请选择候选人归属 HR");
         return;
       }
       try {
-        const response = await fetch(`${API_ORIGIN}/api/job-owners${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`, {
+        const ownerUrl = `${API_ORIGIN}/api/candidates/${encodeURIComponent(id)}/owner${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
+        const response = await fetch(ownerUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ role: candidate.role, ownerId })
+          body: JSON.stringify({ hrId: ownerId })
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.ok) throw new Error(data.error || "分配失败");
-        state.jobOwners = data.jobOwners || {};
-        state.candidates = state.candidates.map(item => item.role === candidate.role ? { ...item, ownerId } : item);
-        renderHrReport();
-        showToast(`已将 ${candidate.role} 分配给 ${state.hrUsers.find(user => user.id === ownerId)?.name || "未分配"}`);
+        await refreshCandidates({ silent: true });
+        await refreshSubmissions({ silent: true });
+        showToast(`已将 ${candidate.name} 归属到 ${state.hrUsers.find(user => user.id === ownerId)?.name || "HR"}`);
       } catch (error) {
         showToast(error.message || "岗位负责人分配失败");
       }
@@ -3178,7 +3277,7 @@
             <button class="submission-item ${active}" data-submission-id="${escapeHtml(item.id)}" type="button">
               <span>
                 <span class="submission-name">${escapeHtml(info.name || "未命名候选人")}</span>
-                <span class="submission-meta">${escapeHtml(info.role || "未填写岗位")} · ${escapeHtml(info.date || "-")} · ${time}</span>
+                <span class="submission-meta">${escapeHtml(info.role || "未填写岗位")} · ${escapeHtml(item.hrOwner || "未分配")} · ${escapeHtml(info.date || "-")} · ${time}</span>
               </span>
               <span class="submission-badge">${item.answerCount || Object.keys(item.answers || {}).length}/50 题</span>
             </button>
@@ -3215,7 +3314,7 @@
     async function refreshSubmissions({ silent = false } = {}) {
       if (candidateMode || state.view !== "hr") return;
       try {
-        const response = await fetch(SYNC_API, { cache: "no-store" });
+        const response = await fetch(scopedHrApi(SYNC_API), { cache: "no-store" });
         if (!response.ok) throw new Error("sync unavailable");
         const data = await response.json();
         const hadHrIdentity = Boolean(state.currentHr);
@@ -3223,9 +3322,7 @@
           String(b.receivedAt || b.submittedAt || "").localeCompare(String(a.receivedAt || a.submittedAt || ""))
         );
         if (state.activeSubmissionId && !state.submissions.some(item => item.id === state.activeSubmissionId)) state.activeSubmissionId = "";
-        state.currentHr = data.currentUser || state.currentHr;
-        state.hrUsers = Array.isArray(data.users) ? data.users : state.hrUsers;
-        state.jobOwners = data.jobOwners || state.jobOwners;
+        applyHrContext(data);
         if (!hadHrIdentity && state.currentHr) {
           renderHrReport();
           return;
@@ -3233,10 +3330,10 @@
         persistCachedSubmissions();
         state.syncReady = true;
         if (hrMode && state.view === "hr" && state.submissions.length && !state.activeSubmissionId) {
-          loadSubmission(state.submissions[0].id, { silent: true });
+          loadSubmission(state.submissions[0].id, { silent: true, refresh: false });
           return;
         }
-        updateSubmissionDock();
+        renderHrReport({ refresh: false });
         if (!silent) showToast("已刷新候选人提交记录");
       } catch (error) {
         state.syncReady = false;
@@ -3279,7 +3376,7 @@
       bindSubmissionDock();
     }
 
-    function loadSubmission(id, { silent = false } = {}) {
+    function loadSubmission(id, { silent = false, refresh = true } = {}) {
       const record = state.submissions.find(item => item.id === id);
       if (!record) return;
       const info = record.info || {};
@@ -3293,7 +3390,7 @@
       if (info.date) els.date.value = info.date;
       persistCachedSubmissions();
       flushSave();
-      renderHrReport();
+      renderHrReport({ refresh });
       if (!silent) showToast(`已载入 ${info.name || "候选人"} 的报告`);
     }
 
@@ -3305,17 +3402,19 @@
     }
 
     function downloadSubmissionsCsv() {
-      if (!state.submissions.length) {
+      const exportSubmissions = filterHrItems(state.submissions, item => item.info?.role);
+      if (!exportSubmissions.length) {
         showToast("暂无提交记录可导出");
         return;
       }
       const rows = [
-        ["候选人", "岗位", "年限", "测评日期", "提交时间", "完成题数", "主类型", "适配度", "开放题"],
-        ...state.submissions.map(item => {
+        ["候选人", "归属HR", "岗位", "年限", "测评日期", "提交时间", "完成题数", "主类型", "适配度", "开放题"],
+        ...exportSubmissions.map(item => {
           const info = item.info || {};
           const result = item.result || {};
           return [
             info.name || "",
+            item.hrOwner || "",
             info.role || "",
             info.years || "",
             info.date || "",
@@ -3331,7 +3430,7 @@
       const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
       const link = document.createElement("a");
       link.href = url;
-      link.download = "候选人提交记录.csv";
+      link.download = `候选人提交记录-${selectedHrName()}${state.selectedJob && !["全部岗位", "我的岗位"].includes(state.selectedJob) ? `-${state.selectedJob}` : ""}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -3342,6 +3441,7 @@
       const rows = [
         ["字段", "内容"],
         ["候选人", els.name.value || "-"],
+        ["归属 HR", state.submissions.find(item => item.id === state.activeSubmissionId)?.hrOwner || "-"],
         ["测评岗位", els.role.value || "-"],
         ["工作年限", els.years.value || "-"],
         ["报告日期", els.date.value || "-"],
