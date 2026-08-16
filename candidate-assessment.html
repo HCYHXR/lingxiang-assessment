@@ -180,12 +180,11 @@
       display: flex;
     }
     .intro-card {
-      width: min(calc((100dvh - 36px) * 9 / 16), calc(100vw - 36px), 560px);
-      aspect-ratio: 9 / 16;
+      width: min(calc(100vw - 36px), 560px);
       min-height: 0;
       border-radius: 28px;
       padding: clamp(18px, 2.6dvh, 26px);
-      overflow: hidden;
+      overflow: auto;
       display: flex;
       flex-direction: column;
       background: rgba(255,255,255,.82);
@@ -228,10 +227,9 @@
     }
     .intro-visual {
       width: 100%;
-      height: auto;
-      min-height: 0;
+      height: clamp(180px, 25dvh, 220px);
       margin: 0;
-      flex: 1 1 0;
+      flex: 0 0 auto;
       border-radius: 22px;
       overflow: hidden;
       border: 1px solid rgba(226,235,232,.9);
@@ -281,6 +279,14 @@
       font-weight: 900;
       cursor: pointer;
       box-shadow: 0 16px 30px rgba(32,56,60,.22);
+      transition: background-color .18s ease, color .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+    .intro-start:disabled {
+      color: rgba(255,255,255,.82);
+      background: #8b9998;
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: .72;
     }
     .intro-error {
       grid-column: 1 / -1;
@@ -299,10 +305,17 @@
         border-radius: 0;
         border: 0;
         box-shadow: none;
+        padding: 16px;
       }
-      .intro-header { padding: 0 0 12px; }
-      .intro-title { font-size: 34px; }
-      .intro-form { padding: 16px; }
+      .intro-header { padding: 0 0 10px; }
+      .intro-logo { width: 110px; }
+      .intro-visual { height: clamp(180px, 27svh, 210px); border-radius: 18px; }
+      .intro-copy { padding: 14px 4px 0; }
+      .intro-title { margin-bottom: 8px; font-size: 32px; }
+      .intro-subtitle { font-size: 15px; line-height: 1.52; }
+      .intro-form { margin-top: 12px; padding: 14px; gap: 12px; border-radius: 18px; }
+      .intro-field input { height: 48px; border-radius: 14px; font-size: 17px; }
+      .intro-start { min-height: 50px; border-radius: 14px; font-size: 18px; }
     }
     @media (min-width: 960px) {
       .candidate-intro {
@@ -1206,7 +1219,7 @@
         </div>
         <div class="intro-copy">
           <h1 class="intro-title">灵相测评</h1>
-          <p class="intro-subtitle">请填写招聘预留的姓名和手机号，通过校验后开始测评。完成全部题目后，系统会生成你的专属灵相报告。</p>
+          <p class="intro-subtitle">请填写招聘预留的姓名和手机号，通过校验后即可开始测评。请根据第一反应作答，完成后系统将生成专属测评报告。</p>
         </div>
         <div class="intro-form">
           <div class="intro-field">
@@ -1215,9 +1228,9 @@
           </div>
           <div class="intro-field">
             <label for="introPhone">手机号</label>
-            <input id="introPhone" autocomplete="tel" inputmode="tel" placeholder="请输入招聘预留手机号">
+            <input id="introPhone" autocomplete="tel" inputmode="numeric" maxlength="13" pattern="[0-9]{11}" placeholder="请输入11位招聘预留手机号">
           </div>
-          <button class="intro-start" id="introStart" type="button">开始测评</button>
+          <button class="intro-start" id="introStart" type="button" disabled>开始测评</button>
           <div class="intro-error" id="introError" aria-live="polite"></div>
         </div>
       </div>
@@ -2885,6 +2898,7 @@
     let answerAnimFrameA = 0;
     let answerAnimFrameB = 0;
     let quizAssetsPreloaded = false;
+    let introAuthPending = false;
     const els = {
       name: document.querySelector("#candidateName"),
       role: document.querySelector("#candidateRole"),
@@ -2932,6 +2946,7 @@
       if (candidateMode) {
         if (els.name.value) els.introName.value = els.name.value;
         if (state.candidatePhone) els.introPhone.value = state.candidatePhone;
+        updateIntroFormState();
         const answeredCount = Object.keys(state.answers).length;
         const completedDraft = answeredCount >= state.questions.length;
         document.body.dataset.gate = state.candidateToken && answeredCount ? "quiz" : "intro";
@@ -2972,9 +2987,15 @@
         els.introName.addEventListener("focus", preloadQuizAssets, { once: true });
         els.introPhone.addEventListener("focus", preloadQuizAssets, { once: true });
         window.setTimeout(preloadQuizAssets, 1200);
-        [els.introName, els.introPhone].forEach(input => input.addEventListener("keydown", event => {
-          if (event.key === "Enter") startCandidateAssessment();
-        }));
+        [els.introName, els.introPhone].forEach(input => {
+          input.addEventListener("input", () => {
+            els.introError.textContent = "";
+            updateIntroFormState();
+          });
+          input.addEventListener("keydown", event => {
+            if (event.key === "Enter" && !els.introStart.disabled) startCandidateAssessment();
+          });
+        });
       }
       window.addEventListener("pagehide", flushSave);
     }
@@ -2996,51 +3017,57 @@
       return String(value || "").replace(/[^\d]/g, "").replace(/^86(?=\d{11}$)/, "");
     }
 
+    function updateIntroFormState() {
+      const nameComplete = Boolean(els.introName.value.trim());
+      const phoneComplete = /^\d{11}$/.test(normalizePhoneInput(els.introPhone.value));
+      els.introStart.disabled = introAuthPending || !nameComplete || !phoneComplete;
+      els.introStart.setAttribute("aria-busy", String(introAuthPending));
+    }
+
+    function setIntroLoading(loading) {
+      introAuthPending = loading;
+      els.introStart.textContent = loading ? "校验中…" : "开始测评";
+      updateIntroFormState();
+    }
+
     async function requestCandidateAuth(name, phone) {
-      let lastResult = null;
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        if (attempt) await new Promise(resolve => window.setTimeout(resolve, 600));
-        const response = await fetch(AUTH_API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
-          body: JSON.stringify({ name, phone })
-        });
-        const data = await response.json().catch(() => ({}));
-        lastResult = { response, data };
-        if (response.ok && data.ok) return data;
-        if (data.code !== "MATCH_FAILED") break;
-      }
-      throw new Error(lastResult?.data?.error || "校验失败，请稍后重试");
+      const response = await fetch(AUTH_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({ name, phone })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.ok) return data;
+      if (data.code === "MATCH_FAILED") throw new Error("未匹配到候选人信息，请联系 HR 确认");
+      throw new Error(data.error || "校验失败，请稍后重试");
     }
 
     async function startCandidateAssessment() {
       const name = els.introName.value.trim();
       const phone = normalizePhoneInput(els.introPhone.value);
+      if (introAuthPending) return;
       if (!name) {
         els.introError.textContent = "请输入姓名";
         els.introName.focus();
         return;
       }
-      if (phone.length < 6) {
-        els.introError.textContent = "请输入正确手机号";
+      if (!/^\d{11}$/.test(phone)) {
+        els.introError.textContent = "请输入正确的11位手机号";
         els.introPhone.focus();
         return;
       }
       els.introError.textContent = "";
-      els.introStart.disabled = true;
-      els.introStart.textContent = "校验中...";
+      setIntroLoading(true);
       let authData;
       try {
         authData = await requestCandidateAuth(name, phone);
       } catch (error) {
         els.introError.textContent = error.message || "校验失败，请稍后重试";
-        els.introStart.disabled = false;
-        els.introStart.textContent = "开始测评";
+        setIntroLoading(false);
         return;
       }
-      els.introStart.disabled = false;
-      els.introStart.textContent = "开始测评";
+      setIntroLoading(false);
       const previousName = els.name.value.trim();
       const hasProgress = Object.keys(state.answers).length > 0;
       const isCompletedDraft = Object.keys(state.answers).length >= state.questions.length;
