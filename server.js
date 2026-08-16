@@ -12,7 +12,7 @@ const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "m2-hr-2026";
 const tokenSecret = process.env.CANDIDATE_TOKEN_SECRET || hrKey || "lingxiang-local-token-secret";
-const candidateVersion = "4052";
+const candidateVersion = "4053";
 const hrVersion = "6006";
 const hrRoleKey = id => crypto.createHmac("sha256", hrKey || tokenSecret).update(`hr:${id}`).digest("hex").slice(0, 32);
 const hrUsers = [

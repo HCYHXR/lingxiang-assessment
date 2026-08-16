@@ -179,10 +179,6 @@
     body[data-mode="candidate"][data-gate="intro"] .candidate-intro {
       display: flex;
     }
-    body[data-mode="candidate"][data-gate="intro"] .app {
-      width: 100%;
-      padding: 0;
-    }
     .intro-card {
       width: min(calc(100vw - 36px), 560px);
       min-height: 0;
@@ -254,7 +250,7 @@
       padding: clamp(16px, 2.3dvh, 22px);
       border-radius: 22px;
       background: rgba(255,255,255,.78);
-      box-shadow: 0 8px 24px rgba(51,78,72,.08);
+      box-shadow: 0 18px 42px rgba(51,78,72,.1);
       flex: 0 0 auto;
     }
     .intro-field { min-width: 0; }
@@ -299,15 +295,15 @@
       font-weight: 900;
     }
     @media (max-width: 720px) {
-      .candidate-intro { padding: 12px 0; overflow: auto; }
+      .candidate-intro { padding: 0; }
       .intro-card {
-        width: min(94vw, 520px);
-        min-height: calc(100svh - 24px);
-        height: auto;
+        width: min(100vw, 520px);
+        height: 100svh;
+        min-height: 0;
         aspect-ratio: auto;
-        border-radius: 22px;
-        border: 1px solid rgba(255,255,255,.78);
-        box-shadow: 0 18px 48px rgba(51,78,72,.14);
+        border-radius: 0;
+        border: 0;
+        box-shadow: none;
         padding: 16px;
       }
       .intro-header { padding: 0 0 10px; }
@@ -322,32 +318,18 @@
     }
     @media (min-width: 960px) {
       .candidate-intro {
-        padding: 28px;
+        padding: 24px;
       }
       .intro-card {
-        width: min(86vw, 840px);
+        width: min(calc((100dvh - 48px) * 9 / 16), 640px);
         min-height: 0;
-        padding: 32px 48px 36px;
-        border-radius: 24px;
-        overflow: hidden;
+        padding: 28px;
+        overflow: auto;
       }
-      .intro-header { padding-bottom: 12px; }
       .intro-logo { width: 82px; }
-      .intro-visual { height: auto; aspect-ratio: 16 / 9; border-radius: 18px; }
       .intro-copy {
-        padding: 20px 2px 0;
+        padding-top: 22px;
       }
-      .intro-title { margin-bottom: 8px; font-size: 36px; }
-      .intro-subtitle { font-size: 16px; line-height: 1.52; }
-      .intro-form {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px 18px;
-        margin-top: 16px;
-        padding: 18px 20px;
-        border-radius: 18px;
-        box-shadow: 0 6px 18px rgba(51,78,72,.07);
-      }
-      .intro-start { grid-column: 1 / -1; min-height: 52px; }
     }
     .floating-tabs {
       display: none;
