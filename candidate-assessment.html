@@ -162,12 +162,12 @@
     .candidate-intro {
       display: none;
       min-height: 100dvh;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       padding: 18px;
       position: relative;
       isolation: isolate;
-      overflow: hidden;
+      overflow: auto;
     }
     .candidate-intro::before {
       content: "";
@@ -179,14 +179,21 @@
     body[data-mode="candidate"][data-gate="intro"] .candidate-intro {
       display: flex;
     }
+    body[data-mode="candidate"][data-gate="intro"] .app {
+      width: 100%;
+      padding: 0;
+    }
     .intro-card {
       width: min(calc(100vw - 36px), 560px);
+      aspect-ratio: 9 / 16;
       min-height: 0;
+      margin: auto 0;
       border-radius: 28px;
-      padding: clamp(18px, 2.6dvh, 26px);
-      overflow: auto;
-      display: flex;
-      flex-direction: column;
+      padding: 22px;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 35fr) minmax(0, 18fr) minmax(0, 35fr);
+      gap: 12px;
       background: rgba(255,255,255,.82);
       border: 1px solid rgba(255,255,255,.78);
       box-shadow: 0 30px 76px rgba(51,78,72,.18);
@@ -198,8 +205,8 @@
       justify-content: flex-start;
       gap: 16px;
       align-items: center;
-      padding: 0 0 clamp(10px, 1.8dvh, 18px);
-      flex: 0 0 auto;
+      padding: 0;
+      min-height: 0;
     }
     .intro-logo {
       width: 82px;
@@ -208,7 +215,13 @@
       object-fit: contain;
       background: transparent;
     }
-    .intro-copy { padding: clamp(14px, 2.2dvh, 22px) 6px 0; flex: 0 0 auto; }
+    .intro-copy {
+      min-height: 0;
+      padding: 0 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
     .intro-title {
       margin: 0 0 10px;
       font-size: clamp(31px, 5.2dvh, 40px);
@@ -225,9 +238,9 @@
     }
     .intro-visual {
       width: 100%;
-      height: clamp(180px, 25dvh, 220px);
+      height: 100%;
+      min-height: 0;
       margin: 0;
-      flex: 0 0 auto;
       border-radius: 22px;
       overflow: hidden;
       border: 1px solid rgba(226,235,232,.9);
@@ -244,25 +257,25 @@
     .intro-form {
       display: grid;
       grid-template-columns: 1fr;
-      gap: clamp(10px, 1.8dvh, 16px);
+      gap: 8px;
       align-items: stretch;
-      margin: clamp(14px, 2.2dvh, 22px) 0 0;
-      padding: clamp(16px, 2.3dvh, 22px);
+      min-height: 0;
+      margin: 0;
+      padding: 14px;
       border-radius: 22px;
       background: rgba(255,255,255,.78);
       box-shadow: 0 18px 42px rgba(51,78,72,.1);
-      flex: 0 0 auto;
     }
     .intro-field { min-width: 0; }
     .intro-field label {
       font-size: 15px;
       color: #405666;
-      margin-bottom: 8px;
+      margin-bottom: 5px;
     }
     .intro-field input {
-      height: clamp(48px, 6.8dvh, 60px);
+      height: 48px;
       border-radius: 16px;
-      font-size: clamp(17px, 2.6dvh, 20px);
+      font-size: 17px;
       font-weight: 800;
       margin-bottom: 0;
     }
@@ -270,10 +283,10 @@
       width: 100%;
       border: 0;
       border-radius: 16px;
-      min-height: clamp(50px, 7dvh, 64px);
+      min-height: 48px;
       color: #fff;
       background: #20383c;
-      font-size: clamp(18px, 2.8dvh, 21px);
+      font-size: 18px;
       font-weight: 900;
       cursor: pointer;
       box-shadow: 0 16px 30px rgba(32,56,60,.22);
@@ -288,48 +301,55 @@
     }
     .intro-error {
       grid-column: 1 / -1;
-      min-height: 20px;
+      min-height: 16px;
       margin: -4px 0 0;
       color: #a84454;
       font-size: 14px;
       font-weight: 900;
     }
     @media (max-width: 720px) {
-      .candidate-intro { padding: 0; }
+      .candidate-intro { padding: 12px 0; }
       .intro-card {
-        width: min(100vw, 520px);
-        height: 100svh;
+        width: min(94vw, 520px);
+        height: auto;
         min-height: 0;
-        aspect-ratio: auto;
-        border-radius: 0;
-        border: 0;
-        box-shadow: none;
-        padding: 16px;
+        aspect-ratio: 9 / 16;
+        border-radius: 22px;
+        border: 1px solid rgba(255,255,255,.78);
+        box-shadow: 0 18px 48px rgba(51,78,72,.14);
+        padding: 12px;
+        grid-template-rows: auto minmax(0, 35fr) minmax(0, 18fr) minmax(0, 35fr);
+        gap: 8px;
       }
-      .intro-header { padding: 0 0 10px; }
-      .intro-logo { width: 72px; }
-      .intro-visual { height: clamp(180px, 27svh, 210px); border-radius: 18px; }
-      .intro-copy { padding: 14px 4px 0; }
-      .intro-title { margin-bottom: 8px; font-size: 32px; }
-      .intro-subtitle { font-size: 15px; line-height: 1.52; }
-      .intro-form { margin-top: 12px; padding: 14px; gap: 12px; border-radius: 18px; }
-      .intro-field input { height: 48px; border-radius: 14px; font-size: 17px; }
-      .intro-start { min-height: 50px; border-radius: 14px; font-size: 18px; }
+      .intro-logo { width: 58px; }
+      .intro-visual { height: 100%; border-radius: 16px; }
+      .intro-copy { padding: 0 2px; }
+      .intro-title { margin-bottom: 6px; font-size: 28px; }
+      .intro-subtitle { font-size: 13px; line-height: 1.45; }
+      .intro-form { padding: 10px; gap: 6px; border-radius: 16px; }
+      .intro-field label { margin-bottom: 4px; font-size: 13px; }
+      .intro-field input { height: 44px; border-radius: 13px; font-size: 16px; }
+      .intro-start { min-height: 46px; border-radius: 13px; font-size: 17px; }
+      .intro-error { min-height: 14px; font-size: 12px; }
     }
     @media (min-width: 960px) {
       .candidate-intro {
         padding: 24px;
       }
       .intro-card {
-        width: min(calc((100dvh - 48px) * 9 / 16), 640px);
+        width: clamp(520px, 38vw, 560px);
+        aspect-ratio: 9 / 16;
         min-height: 0;
-        padding: 28px;
-        overflow: auto;
+        padding: 24px;
+        gap: 14px;
       }
       .intro-logo { width: 82px; }
-      .intro-copy {
-        padding-top: 22px;
-      }
+      .intro-title { font-size: 36px; }
+      .intro-subtitle { font-size: 16px; line-height: 1.5; }
+      .intro-form { padding: 16px; gap: 10px; }
+      .intro-field label { margin-bottom: 6px; }
+      .intro-field input { height: 52px; font-size: 18px; }
+      .intro-start { min-height: 52px; font-size: 19px; }
     }
     .floating-tabs {
       display: none;
