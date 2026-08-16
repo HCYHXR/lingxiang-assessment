@@ -682,8 +682,7 @@
     .candidate-title-row { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 34px; }
     .report-title { font-size: 34px; font-weight: 900; line-height: 1.05; margin: 0 0 10px; letter-spacing: 0; }
     .candidate-meta { color: #425466; font-size: 15px; line-height: 1.45; font-weight: 900; }
-    .m2-logo { flex: 0 0 auto; width: 112px; height: 72px; border-radius: 16px; background: rgba(255,255,255,.82); display: grid; place-items: center; box-shadow: 0 14px 34px rgba(50,63,67,.12); overflow: hidden; }
-    .m2-logo img { width: 82px; height: auto; display: block; object-fit: contain; }
+    .m2-report-logo { flex: 0 0 auto; width: 82px; height: auto; display: block; object-fit: contain; background: transparent; }
     .candidate-card {
       background: rgba(255,255,255,.78);
       border-radius: 22px;
@@ -726,8 +725,7 @@
     @media (max-width: 560px) {
       .candidate-title-row { margin-bottom: 24px; }
       .report-title { font-size: 30px; }
-      .m2-logo { width: 88px; height: 58px; }
-      .m2-logo img { width: 66px; }
+      .m2-report-logo { width: 66px; }
       .spirit-summary { grid-template-columns: 1fr; text-align: left; }
       .spirit-summary img { width: 170px; height: 170px; margin: -6px auto 0; }
       .trait-score-strip { grid-template-columns: repeat(2, 1fr); }
@@ -2998,39 +2996,51 @@
       return String(value || "").replace(/[^\d]/g, "").replace(/^86(?=\d{11}$)/, "");
     }
 
+    async function requestCandidateAuth(name, phone) {
+      let lastResult = null;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        if (attempt) await new Promise(resolve => window.setTimeout(resolve, 600));
+        const response = await fetch(AUTH_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({ name, phone })
+        });
+        const data = await response.json().catch(() => ({}));
+        lastResult = { response, data };
+        if (response.ok && data.ok) return data;
+        if (data.code !== "MATCH_FAILED") break;
+      }
+      throw new Error(lastResult?.data?.error || "校验失败，请稍后重试");
+    }
+
     async function startCandidateAssessment() {
       const name = els.introName.value.trim();
       const phone = normalizePhoneInput(els.introPhone.value);
       if (!name) {
-        els.introError.textContent = "??????";
+        els.introError.textContent = "请输入姓名";
         els.introName.focus();
         return;
       }
       if (phone.length < 6) {
-        els.introError.textContent = "??????????";
+        els.introError.textContent = "请输入正确手机号";
         els.introPhone.focus();
         return;
       }
       els.introError.textContent = "";
       els.introStart.disabled = true;
-      els.introStart.textContent = "????...";
+      els.introStart.textContent = "校验中...";
       let authData;
       try {
-        const response = await fetch(AUTH_API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, phone })
-        });
-        authData = await response.json().catch(() => ({}));
-        if (!response.ok || !authData.ok) throw new Error(authData.error || "????????????????");
+        authData = await requestCandidateAuth(name, phone);
       } catch (error) {
-        els.introError.textContent = error.message || "????????????????";
+        els.introError.textContent = error.message || "校验失败，请稍后重试";
         els.introStart.disabled = false;
-        els.introStart.textContent = "????";
+        els.introStart.textContent = "开始测评";
         return;
       }
       els.introStart.disabled = false;
-      els.introStart.textContent = "????";
+      els.introStart.textContent = "开始测评";
       const previousName = els.name.value.trim();
       const hasProgress = Object.keys(state.answers).length > 0;
       const isCompletedDraft = Object.keys(state.answers).length >= state.questions.length;
@@ -3275,7 +3285,7 @@
                 <h2 class="report-title">灵相报告</h2>
                 <div class="candidate-meta">候选人：${escapeHtml(els.name.value || "-")}</div>
               </div>
-              <div class="m2-logo"><img src="talent_tool_assets/m2_report_logo.png" alt="M2"></div>
+              <img class="m2-report-logo" src="talent_tool_assets/m2_report_logo.png" alt="M2">
             </div>
 
             <section class="candidate-card candidate-hero-card">
