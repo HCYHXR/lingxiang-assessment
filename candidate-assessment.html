@@ -946,6 +946,11 @@
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .level-scene::before {
       content: none !important;
     }
+    body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .answer-animate .level-scene {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-head {
       position: absolute !important;
       top: 0 !important;
@@ -1023,10 +1028,14 @@
       top: 0 !important;
       bottom: 0 !important;
       left: 0 !important;
+      width: 100% !important;
       height: 6px !important;
       margin: 0 !important;
-      transform: none !important;
-      transition: width .25s ease !important;
+      transform: scaleX(0) !important;
+      transform-origin: left center !important;
+      backface-visibility: hidden !important;
+      will-change: transform !important;
+      transition: transform .25s ease !important;
       animation: none !important;
     }
     body[data-mode="candidate"][data-gate="quiz"][data-view="answer"] .game-candidate-pill,
@@ -3168,7 +3177,6 @@
 
     function goNextQuestion() {
       cancelAutoAdvance();
-      if (candidateMode) window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       if (state.index < state.questions.length - 1) {
         state.index += 1;
         setView("answer");
@@ -3264,7 +3272,7 @@
       const chapterIndex = question.number <= 15 ? 0 : question.number <= 30 ? 1 : question.number <= 40 ? 2 : 3;
       const chapter = questChapters[chapterIndex];
       const progress = state.questions.length ? ((question.number - 1) / (state.questions.length - 1)) * 100 : 0;
-      els.gameProgress.style.width = `${progress}%`;
+      els.gameProgress.style.setProperty("transform", `scaleX(${Math.max(0, Math.min(1, progress / 100))})`, "important");
       els.gameProgress.parentElement.setAttribute("aria-valuenow", String(Math.round(progress)));
       els.gameCandidate.textContent = `候选人：${els.name.value || "-"}`;
       if (els.candidateGameName) els.candidateGameName.textContent = `候选人：${els.name.value || "-"}`;
