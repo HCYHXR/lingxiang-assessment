@@ -3,6 +3,9 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const zlib = require("node:zlib");
 const crypto = require("node:crypto");
+const { promisify } = require("node:util");
+
+const gzipAsync = promisify(zlib.gzip);
 
 const rootDir = __dirname;
 const dataFile = process.env.DATA_FILE
@@ -750,7 +753,7 @@ async function serveStatic(req, res) {
     const headers = { "Content-Type": mimeTypes[ext] || "application/octet-stream" };
     if (body.length > 1024 && canGzip(req, filePath)) {
       try {
-        body = await zlib.promises.gzip(body);
+        body = await gzipAsync(body);
         headers["Content-Encoding"] = "gzip";
         headers["Vary"] = "Accept-Encoding";
       } catch (error) {
