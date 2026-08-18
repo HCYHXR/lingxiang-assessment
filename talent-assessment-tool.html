@@ -530,14 +530,34 @@
     .candidate-roster-status { border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 900; white-space: nowrap; background: #f0f2f5; color: #53606f; }
     .candidate-roster-status.started { background: #fff6db; color: #996100; }
     .candidate-roster-status.submitted { background: #e6f1f8; color: #245b7c; }
-    .candidate-roster-actions { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
+    .candidate-roster-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
     .candidate-owner-select { min-height: 34px; border: 1px solid #b7c6d6; border-radius: 6px; background: #fff; font-weight: 800; padding: 0 8px; }
+    .candidate-select-line { display: flex; gap: 10px; align-items: flex-start; }
+    .candidate-code-select { width: 17px; height: 17px; margin: 2px 0 0; accent-color: #4f86b5; flex: 0 0 auto; }
+    .verification-code-dock { display: grid; gap: 12px; }
+    .verification-code-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 150px 150px auto auto; gap: 8px; align-items: center; }
+    .verification-code-toolbar input,
+    .verification-code-toolbar select { min-height: 40px; margin: 0; }
+    .verification-code-list { display: grid; gap: 8px; }
+    .verification-code-row { border: 1px solid #d6dde6; background: #fff; display: grid; grid-template-columns: minmax(180px, 1.35fr) minmax(150px, .7fr) minmax(180px, 1fr) auto; gap: 12px; align-items: center; padding: 11px 12px; }
+    .verification-code-value { display: flex; align-items: center; gap: 8px; }
+    .verification-code-value code { min-width: 84px; padding: 7px 9px; border: 1px solid #c9d6e2; border-radius: 6px; background: #f5f8fb; color: #17212b; font: 900 18px/1.1 ui-monospace, SFMono-Regular, Consolas, monospace; text-align: center; }
+    .verification-code-time { color: #667085; font-size: 12px; font-weight: 800; line-height: 1.55; }
+    .verification-code-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .verification-code-status { border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 900; white-space: nowrap; }
+    .verification-code-status.unused { background: #eaf3fa; color: #245b7c; }
+    .verification-code-status.used { background: #e8f4ed; color: #28724b; }
+    .verification-code-status.expired { background: #f0f2f5; color: #667085; }
+    .verification-code-status.revoked { background: #fae9ec; color: #9b3448; }
     @media (max-width: 860px) {
       .candidate-gate-form,
       .candidate-gate-form.admin,
       .candidate-gate-bulk,
-      .candidate-roster-item { grid-template-columns: 1fr; }
+      .candidate-roster-item,
+      .verification-code-toolbar,
+      .verification-code-row { grid-template-columns: 1fr; }
       .candidate-roster-actions { justify-content: flex-start; flex-wrap: wrap; }
+      .verification-code-actions { justify-content: flex-start; }
     }
     .hr-sheet {
       background: #f7fafc;
@@ -2500,12 +2520,13 @@
     const API_ORIGIN = location.protocol.startsWith("http") ? location.origin : "http://127.0.0.1:8787";
     const SYNC_API = `${API_ORIGIN}/api/submissions${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
     const CANDIDATES_API = `${API_ORIGIN}/api/candidates${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
+    const VERIFICATION_CODES_API = `${API_ORIGIN}/api/verification-codes${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
     const SUBMISSION_CACHE_KEY = `talentHrSubmissionCache:${HR_ACCESS_KEY || "local-admin"}`;
     const DRAFT_STORAGE_KEY = `talentAssessmentDraft:${HR_ACCESS_KEY || "local"}`;
     const HR_JOB_TABS = ["全部岗位", "招聘", "系统策划", "游戏测试", "执行策划", "AI美术（场景）", "特效"];
     if (candidateMode) document.body.dataset.mode = "candidate";
     if (hrMode) document.body.dataset.mode = "hr";
-    const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], candidates: [], activeSubmissionId: "", syncReady: false, rosterReady: false, currentHr: null, hrUsers: [], jobOwners: {}, selectedJob: "全部岗位", selectedHr: "all" };
+    const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], candidates: [], verificationCodes: [], activeSubmissionId: "", syncReady: false, rosterReady: false, verificationCodesReady: false, currentHr: null, hrUsers: [], jobOwners: {}, selectedJob: "全部岗位", selectedHr: "all", codeSearch: "", codeStatusFilter: "all", codeExpiryHours: 24, selectedCandidateIds: new Set() };
     let saveTimer = 0;
     let answerAnimFrameA = 0;
     let answerAnimFrameB = 0;
@@ -2927,6 +2948,7 @@
         </div>
         <div class="hr-permission-note">当前查看：${escapeHtml(selectedHrName())} · ${escapeHtml(state.selectedJob)} · 候选人 ${visibleCandidates.length} 人 · 已提交 ${visibleSubmissions.length} 份。${state.currentHr?.role === "admin" ? " 管理员可切换查看各 HR 数据。" : " 仅显示你负责或录入的数据。"}</div>
         ${renderCandidateGateDock()}
+        ${renderVerificationCodeDock()}
         ${renderSubmissionDock()}
         <article class="hr-sheet">
           <header class="hr-sheet-header">
@@ -3008,6 +3030,7 @@
       `;
       bindSubmissionDock();
       bindCandidateGateDock();
+      bindVerificationCodeDock();
       const hrScopeSelect = els.reportView.querySelector("[data-hr-scope]");
       if (hrScopeSelect) hrScopeSelect.addEventListener("change", () => changeHrScope(hrScopeSelect.value));
       els.reportView.querySelectorAll("[data-job-filter]").forEach(button => {
@@ -3026,6 +3049,7 @@
       if (refresh) {
         refreshSubmissions({ silent: true });
         refreshCandidates({ silent: true });
+        refreshVerificationCodes({ silent: true });
       }
     }
 
@@ -3038,13 +3062,17 @@
       const rows = filteredCandidates.length
         ? filteredCandidates.map(item => `
           <div class="candidate-roster-item">
-            <span>
-              <span class="submission-name">${escapeHtml(item.name || "-")}</span>
-              <span class="submission-meta">${escapeHtml(item.phoneMasked || "-")} · ${escapeHtml(item.role || "未填写岗位")} · 归属 ${escapeHtml(item.hrOwner || "未分配")} · ${escapeHtml(item.note || "")}</span>
-            </span>
+            <label class="candidate-select-line">
+              <input class="candidate-code-select" data-candidate-code-select="${escapeHtml(item.id)}" type="checkbox" ${state.selectedCandidateIds.has(item.id) ? "checked" : ""} aria-label="选择 ${escapeHtml(item.name || "候选人")}">
+              <span>
+                <span class="submission-name">${escapeHtml(item.name || "-")}</span>
+                <span class="submission-meta">${escapeHtml(item.phoneMasked || "-")} · ${escapeHtml(item.role || "未填写岗位")} · 归属 ${escapeHtml(item.hrOwner || "未分配")} · ${escapeHtml(item.note || "")}</span>
+              </span>
+            </label>
             <span class="candidate-roster-actions">
               ${state.currentHr?.role === "admin" ? `<select class="candidate-owner-select" data-owner-candidate="${escapeHtml(item.id)}" aria-label="候选人归属 HR">${state.hrUsers.filter(user => user.role === "hr").map(user => `<option value="${escapeHtml(user.id)}" ${item.hrId === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}</select>` : ""}
               <span class="candidate-roster-status ${escapeHtml(item.status || "invited")}">${candidateStatusText(item.status)}</span>
+              <button class="hr-action" data-generate-candidate-code="${escapeHtml(item.id)}" type="button">生成核验码</button>
               ${item.status === "submitted" ? `<button class="hr-action" data-candidate-reset="${escapeHtml(item.id)}" type="button">重置资格</button>` : ""}
             </span>
           </div>
@@ -3055,7 +3083,7 @@
           <div class="submission-head">
             <div>
               <div class="submission-title">候选人准入名单</div>
-              <div class="submission-meta">候选人必须用这里录入的姓名 + 手机号校验，通过后才能进入测评；每人仅限提交一次。</div>
+              <div class="submission-meta">候选人使用姓名 + 手机号 + 核验码进入测评；新增候选人后会自动生成24小时有效核验码。</div>
             </div>
             <div class="submission-actions">
               <button class="hr-action" data-candidate-action="refresh" type="button">刷新名单</button>
@@ -3066,11 +3094,11 @@
             <input id="gatePhone" placeholder="手机号">
             <input id="gateRole" placeholder="应聘岗位/备注">
             ${state.currentHr.role === "admin" ? `<select id="gateHrOwner" class="candidate-owner-select" aria-label="新增候选人归属 HR"><option value="">选择归属 HR</option>${state.hrUsers.filter(user => user.role === "hr").map(user => `<option value="${escapeHtml(user.id)}" ${state.selectedHr === user.id ? "selected" : ""}>${escapeHtml(user.name)}</option>`).join("")}</select>` : ""}
-            <button class="hr-action" data-candidate-action="add" type="button">添加</button>
+            <button class="hr-action" data-candidate-action="add" type="button">添加并生成</button>
           </div>
           <div class="candidate-gate-bulk">
             <textarea id="gateBulk" placeholder="批量粘贴：每行一个候选人，例如：张三 13800000000 HRBP${state.currentHr.role === "admin" ? "；统一使用上方选择的归属 HR" : "；自动归属当前 HR"}"></textarea>
-            <button class="hr-action" data-candidate-action="bulk" type="button">批量导入</button>
+            <button class="hr-action" data-candidate-action="bulk" type="button">导入并生成</button>
           </div>` : ""}
           <div class="candidate-roster-list">${rows}</div>
         </section>
@@ -3089,6 +3117,15 @@
       });
       els.reportView.querySelectorAll("[data-owner-candidate]").forEach(select => {
         select.addEventListener("change", () => assignCandidateOwner(select.dataset.ownerCandidate, select.value));
+      });
+      els.reportView.querySelectorAll("[data-candidate-code-select]").forEach(input => {
+        input.addEventListener("change", () => {
+          if (input.checked) state.selectedCandidateIds.add(input.dataset.candidateCodeSelect);
+          else state.selectedCandidateIds.delete(input.dataset.candidateCodeSelect);
+        });
+      });
+      els.reportView.querySelectorAll("[data-generate-candidate-code]").forEach(button => {
+        button.addEventListener("click", () => generateVerificationCodes([button.dataset.generateCandidateCode]));
       });
     }
 
@@ -3111,6 +3148,8 @@
       state.selectedJob = "全部岗位";
       state.activeSubmissionId = "";
       state.candidates = [];
+      state.verificationCodes = [];
+      state.selectedCandidateIds.clear();
       state.submissions = [];
       state.answers = {};
       els.name.value = "";
@@ -3169,11 +3208,36 @@
       }
     }
 
+    async function refreshVerificationCodes({ silent = false } = {}) {
+      if (candidateMode || state.view !== "hr") return;
+      try {
+        const response = await fetch(scopedHrApi(VERIFICATION_CODES_API), { cache: "no-store" });
+        if (!response.ok) throw new Error("verification code service unavailable");
+        const data = await response.json();
+        state.verificationCodes = Array.isArray(data.codes) ? data.codes : [];
+        applyHrContext(data);
+        state.verificationCodesReady = true;
+        updateVerificationCodeDock();
+        if (!silent) showToast("已刷新核验码");
+      } catch (error) {
+        state.verificationCodesReady = false;
+        updateVerificationCodeDock();
+        if (!silent) showToast("未连接到核验码服务");
+      }
+    }
+
     function updateCandidateGateDock() {
       const dock = els.reportView.querySelector(".candidate-gate-dock");
       if (!dock) return;
       dock.outerHTML = renderCandidateGateDock();
       bindCandidateGateDock();
+    }
+
+    function updateVerificationCodeDock() {
+      const dock = els.reportView.querySelector(".verification-code-dock");
+      if (!dock) return;
+      dock.outerHTML = renderVerificationCodeDock();
+      bindVerificationCodeDock();
     }
 
     async function addCandidateFromForm() {
@@ -3224,7 +3288,12 @@
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.ok) throw new Error(data.error || "保存失败");
         await refreshCandidates({ silent: true });
-        showToast(`已保存 ${data.candidates.length} 位候选人`);
+        try {
+          await generateVerificationCodes(data.candidates.map(item => item.id), { silent: true });
+          showToast(`已保存并生成 ${data.candidates.length} 个核验码`);
+        } catch (codeError) {
+          showToast(`候选人已保存，但核验码生成失败：${codeError.message}`);
+        }
       } catch (error) {
         showToast(error.message || "候选人保存失败");
       }
@@ -3259,10 +3328,180 @@
         const response = await fetch(resetUrl, { method: "POST" });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.ok) throw new Error(data.error || "重置失败");
-        await refreshCandidates({ silent: true });
-        showToast("已重置候选人作答资格");
+        await generateVerificationCodes([id], { silent: true });
+        showToast("已重置资格并生成新核验码");
       } catch (error) {
         showToast(error.message || "重置失败");
+      }
+    }
+
+    function verificationCodeStatusText(status) {
+      return status === "used" ? "已使用" : status === "expired" ? "已过期" : status === "revoked" ? "已作废" : "未使用";
+    }
+
+    function verificationCodeDate(value) {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "-";
+      return date.toLocaleString("zh-CN", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function filteredVerificationCodes() {
+      const keyword = state.codeSearch.trim().toLowerCase();
+      return state.verificationCodes.filter(item => {
+        if (state.codeStatusFilter !== "all" && item.status !== state.codeStatusFilter) return false;
+        if (!keyword) return true;
+        return [item.candidateName, item.phoneMasked, item.role, item.code, item.hrOwner].some(value => String(value || "").toLowerCase().includes(keyword));
+      });
+    }
+
+    function renderVerificationCodeRows() {
+      const codes = filteredVerificationCodes();
+      return codes.length ? codes.map(item => `
+        <div class="verification-code-row">
+          <div>
+            <span class="submission-name">${escapeHtml(item.candidateName || "未命名候选人")}</span>
+            <span class="submission-meta">${escapeHtml(item.phoneMasked || "-")} · ${escapeHtml(item.role || "未填写岗位")} · ${escapeHtml(item.hrOwner || "未分配")}</span>
+          </div>
+          <div class="verification-code-value">
+            <code>${escapeHtml(item.code || "------")}</code>
+            <button class="hr-action" data-copy-code="${escapeHtml(item.code || "")}" type="button">复制</button>
+          </div>
+          <div class="verification-code-time">
+            生成：${verificationCodeDate(item.generatedAt)}<br>
+            ${item.status === "used" ? `使用：${verificationCodeDate(item.usedAt)}` : `到期：${verificationCodeDate(item.expiresAt)}`}
+          </div>
+          <div class="verification-code-actions">
+            <span class="verification-code-status ${escapeHtml(item.status || "unused")}">${verificationCodeStatusText(item.status)}</span>
+            ${item.status === "unused" ? `<button class="hr-action" data-copy-code-notice="${escapeHtml(item.id)}" type="button">复制通知</button>` : ""}
+            <button class="hr-action" data-regenerate-code="${escapeHtml(item.id)}" type="button">重新生成</button>
+            ${item.status !== "revoked" ? `<button class="hr-action" data-revoke-code="${escapeHtml(item.id)}" type="button">作废</button>` : ""}
+          </div>
+        </div>
+      `).join("") : `<div class="submission-empty">${state.verificationCodesReady ? "没有符合条件的核验码。" : "正在连接核验码服务..."}</div>`;
+    }
+
+    function renderVerificationCodeDock() {
+      return `
+        <section class="submission-dock verification-code-dock">
+          <div class="submission-head">
+            <div>
+              <div class="submission-title">候选人核验码</div>
+              <div class="submission-meta">6位数字核验码，默认24小时有效，首次核验后自动失效。</div>
+            </div>
+          </div>
+          <div class="verification-code-toolbar">
+            <input data-code-search value="${escapeHtml(state.codeSearch)}" placeholder="搜索姓名、手机号、核验码">
+            <select data-code-status aria-label="核验码状态">
+              <option value="all" ${state.codeStatusFilter === "all" ? "selected" : ""}>全部状态</option>
+              <option value="unused" ${state.codeStatusFilter === "unused" ? "selected" : ""}>未使用</option>
+              <option value="used" ${state.codeStatusFilter === "used" ? "selected" : ""}>已使用</option>
+              <option value="expired" ${state.codeStatusFilter === "expired" ? "selected" : ""}>已过期</option>
+              <option value="revoked" ${state.codeStatusFilter === "revoked" ? "selected" : ""}>已作废</option>
+            </select>
+            <select data-code-expiry aria-label="核验码有效期">
+              ${[24,48,72,168].map(hours => `<option value="${hours}" ${state.codeExpiryHours === hours ? "selected" : ""}>有效期 ${hours === 168 ? "7天" : `${hours}小时`}</option>`).join("")}
+            </select>
+            <button class="hr-action" data-code-action="refresh" type="button">刷新</button>
+            <button class="hr-action" data-code-action="batch" type="button">批量生成</button>
+          </div>
+          <div class="verification-code-list">${renderVerificationCodeRows()}</div>
+        </section>
+      `;
+    }
+
+    function bindVerificationCodeDock() {
+      const search = els.reportView.querySelector("[data-code-search]");
+      const status = els.reportView.querySelector("[data-code-status]");
+      const expiry = els.reportView.querySelector("[data-code-expiry]");
+      if (search) search.addEventListener("input", () => {
+        state.codeSearch = search.value;
+        const list = els.reportView.querySelector(".verification-code-list");
+        if (list) list.innerHTML = renderVerificationCodeRows();
+        bindVerificationCodeRowActions();
+      });
+      if (status) status.addEventListener("change", () => { state.codeStatusFilter = status.value; updateVerificationCodeDock(); });
+      if (expiry) expiry.addEventListener("change", () => { state.codeExpiryHours = Number(expiry.value) || 24; });
+      els.reportView.querySelector("[data-code-action='refresh']")?.addEventListener("click", () => refreshVerificationCodes({ silent: false }));
+      els.reportView.querySelector("[data-code-action='batch']")?.addEventListener("click", () => {
+        const ids = [...state.selectedCandidateIds];
+        if (!ids.length) {
+          showToast("请先在候选人名单中勾选候选人");
+          return;
+        }
+        generateVerificationCodes(ids);
+      });
+      bindVerificationCodeRowActions();
+    }
+
+    function bindVerificationCodeRowActions() {
+      els.reportView.querySelectorAll("[data-copy-code]").forEach(button => button.addEventListener("click", () => copyText(button.dataset.copyCode, "核验码已复制")));
+      els.reportView.querySelectorAll("[data-copy-code-notice]").forEach(button => button.addEventListener("click", () => copyVerificationCodeNotice(button.dataset.copyCodeNotice)));
+      els.reportView.querySelectorAll("[data-regenerate-code]").forEach(button => button.addEventListener("click", () => regenerateVerificationCode(button.dataset.regenerateCode)));
+      els.reportView.querySelectorAll("[data-revoke-code]").forEach(button => button.addEventListener("click", () => revokeVerificationCode(button.dataset.revokeCode)));
+    }
+
+    async function copyText(value, message) {
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch {
+        const field = document.createElement("textarea");
+        field.value = value;
+        field.style.position = "fixed";
+        field.style.opacity = "0";
+        document.body.appendChild(field);
+        field.select();
+        document.execCommand("copy");
+        field.remove();
+      }
+      showToast(message);
+    }
+
+    function copyVerificationCodeNotice(id) {
+      const item = state.verificationCodes.find(code => code.id === id);
+      if (!item) return;
+      const message = `您好，请打开灵相测评链接完成测评。\n\n姓名：${item.candidateName}\n核验码：${item.code}\n有效期至：${new Date(item.expiresAt).toLocaleString("zh-CN", { hour12: false })}\n\n核验码仅限本人使用，完成核验后自动失效。`;
+      copyText(message, "完整通知已复制");
+    }
+
+    async function generateVerificationCodes(candidateIds, { silent = false } = {}) {
+      const response = await fetch(VERIFICATION_CODES_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateIds, expiresInHours: state.codeExpiryHours })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) throw new Error(data.error || "核验码生成失败");
+      state.selectedCandidateIds.clear();
+      await Promise.all([refreshCandidates({ silent: true }), refreshVerificationCodes({ silent: true })]);
+      if (!silent) showToast(`已生成 ${data.codes.length} 个核验码`);
+      return data;
+    }
+
+    async function regenerateVerificationCode(id) {
+      try {
+        const url = `${API_ORIGIN}/api/verification-codes/${encodeURIComponent(id)}/regenerate${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
+        const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expiresInHours: state.codeExpiryHours }) });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || "重新生成失败");
+        await refreshVerificationCodes({ silent: true });
+        showToast(`已生成新核验码 ${data.code.code}`);
+      } catch (error) {
+        showToast(error.message || "重新生成失败");
+      }
+    }
+
+    async function revokeVerificationCode(id) {
+      try {
+        const url = `${API_ORIGIN}/api/verification-codes/${encodeURIComponent(id)}/revoke${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
+        const response = await fetch(url, { method: "POST" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.error || "作废失败");
+        await refreshVerificationCodes({ silent: true });
+        showToast("核验码已作废");
+      } catch (error) {
+        showToast(error.message || "作废失败");
       }
     }
 

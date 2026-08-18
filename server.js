@@ -12,8 +12,8 @@ const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "m2-hr-2026";
 const tokenSecret = process.env.CANDIDATE_TOKEN_SECRET || hrKey || "lingxiang-local-token-secret";
-const candidateVersion = "4056";
-const hrVersion = "6006";
+const candidateVersion = "4060";
+const hrVersion = "6010";
 const hrRoleKey = id => crypto.createHmac("sha256", hrKey || tokenSecret).update(`hr:${id}`).digest("hex").slice(0, 32);
 const hrUsers = [
   { id: "admin", name: "管理员", role: "admin", key: process.env.HR_KEY || "m2-hr-2026" },
@@ -22,6 +22,7 @@ const hrUsers = [
   { id: "hou", name: "侯女士", role: "hr", key: process.env.HR_HOU_KEY || hrRoleKey("hou") },
   { id: "wang", name: "王女士", role: "hr", key: process.env.HR_WANG_KEY || hrRoleKey("wang") },
 ];
+let storeLock = Promise.resolve();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -82,10 +83,11 @@ async function readStore() {
     return {
       submissions: Array.isArray(parsed.submissions) ? parsed.submissions : [],
       candidates: Array.isArray(parsed.candidates) ? parsed.candidates : [],
+      verificationCodes: Array.isArray(parsed.verificationCodes) ? parsed.verificationCodes : [],
       jobOwners: parsed.jobOwners && typeof parsed.jobOwners === "object" ? parsed.jobOwners : {},
     };
   } catch (error) {
-    if (error.code === "ENOENT") return { submissions: [], candidates: [], jobOwners: {} };
+    if (error.code === "ENOENT") return { submissions: [], candidates: [], verificationCodes: [], jobOwners: {} };
     throw error;
   }
 }
@@ -95,8 +97,21 @@ async function writeStore(store) {
   await fs.writeFile(dataFile, JSON.stringify({
     submissions: Array.isArray(store.submissions) ? store.submissions : [],
     candidates: Array.isArray(store.candidates) ? store.candidates : [],
+    verificationCodes: Array.isArray(store.verificationCodes) ? store.verificationCodes : [],
     jobOwners: store.jobOwners && typeof store.jobOwners === "object" ? store.jobOwners : {},
   }, null, 2), "utf8");
+}
+
+async function withStoreLock(task) {
+  const previous = storeLock;
+  let release;
+  storeLock = new Promise(resolve => { release = resolve; });
+  await previous;
+  try {
+    return await task();
+  } finally {
+    release();
+  }
 }
 
 function cleanText(value, fallback = "") {
@@ -121,6 +136,28 @@ function maskPhone(phone) {
 
 function phoneHash(phone) {
   return crypto.createHash("sha256").update(normalizePhone(phone)).digest("hex");
+}
+
+function normalizeVerificationCode(value) {
+  return String(value ?? "").replace(/[^\d]/g, "").slice(0, 6);
+}
+
+function verificationCodeHash(value) {
+  return crypto.createHash("sha256").update(normalizeVerificationCode(value)).digest("hex");
+}
+
+function verificationCodeStatus(record, now = Date.now()) {
+  if (record.status === "used" || record.status === "revoked") return record.status;
+  return Date.parse(record.expiresAt || "") <= now ? "expired" : "unused";
+}
+
+function generateUniqueVerificationCode(store) {
+  const existing = new Set(store.verificationCodes.map(item => item.code));
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+    if (!existing.has(code)) return code;
+  }
+  throw new Error("核验码生成繁忙，请稍后重试");
 }
 
 function base64url(value) {
@@ -232,6 +269,56 @@ function publicCandidate(candidate, store) {
   };
 }
 
+function publicVerificationCode(record, store) {
+  const candidate = store.candidates.find(item => item.id === record.candidateId);
+  return {
+    id: record.id,
+    candidateId: record.candidateId,
+    candidateName: candidate?.name || "",
+    phoneMasked: maskPhone(candidate?.phone),
+    role: candidate?.role || "",
+    code: record.code,
+    status: verificationCodeStatus(record),
+    generatedAt: record.generatedAt || "",
+    expiresAt: record.expiresAt || "",
+    usedAt: record.usedAt || "",
+    revokedAt: record.revokedAt || "",
+    batchId: record.batchId || "",
+    hrId: candidate ? candidateHrId(candidate, store) : record.hrId || "",
+    hrOwner: candidate ? candidateHrName(candidate, store) : record.hrOwner || "未分配",
+  };
+}
+
+function revokeCandidateCodes(store, candidateId, now) {
+  store.verificationCodes.forEach(record => {
+    if (record.candidateId === candidateId && record.status !== "revoked") {
+      record.status = "revoked";
+      record.revokedAt = now;
+    }
+  });
+}
+
+function createVerificationCode(store, candidate, user, expiresInHours, batchId, now) {
+  revokeCandidateCodes(store, candidate.id, now);
+  const code = generateUniqueVerificationCode(store);
+  const record = {
+    id: `code-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    candidateId: candidate.id,
+    code,
+    codeHash: verificationCodeHash(code),
+    status: "unused",
+    generatedAt: now,
+    expiresAt: new Date(Date.parse(now) + expiresInHours * 60 * 60 * 1000).toISOString(),
+    usedAt: "",
+    revokedAt: "",
+    batchId,
+    hrId: candidateHrId(candidate, store) || user.id,
+    hrOwner: candidateHrName(candidate, store) || user.name,
+  };
+  store.verificationCodes.unshift(record);
+  return record;
+}
+
 function findCandidateByIdentity(store, name, phone) {
   const cleanName = normalizeName(name);
   const hash = phoneHash(phone);
@@ -242,30 +329,156 @@ async function handleCandidateAuth(req, res) {
   const payload = JSON.parse(await readBody(req) || "{}");
   const name = cleanText(payload.name);
   const phone = normalizePhone(payload.phone);
-  if (!name || phone.length < 6) {
-    sendJson(res, 400, { ok: false, error: "请填写姓名和正确手机号" });
+  const verificationCode = normalizeVerificationCode(payload.verificationCode);
+  if (!name || phone.length < 6 || verificationCode.length !== 6) {
+    sendJson(res, 400, { ok: false, error: "请填写姓名、正确手机号和6位核验码" });
     return;
   }
 
+  await withStoreLock(async () => {
+    const store = await readStore();
+    const candidate = findCandidateByIdentity(store, name, phone);
+    if (!candidate) {
+      sendJson(res, 403, { ok: false, code: "MATCH_FAILED", error: "姓名或手机号不匹配，请联系招聘负责人确认" });
+      return;
+    }
+    if (candidate.status === "submitted") {
+      sendJson(res, 409, { ok: false, code: "ALREADY_SUBMITTED", error: "你已完成本次测评，不能重复作答" });
+      return;
+    }
+    const nowMs = Date.now();
+    if (Date.parse(candidate.lockedUntil || "") > nowMs) {
+      sendJson(res, 429, { ok: false, code: "TOO_MANY_ATTEMPTS", error: "尝试次数过多，请10分钟后重试" });
+      return;
+    }
+    const codeHash = verificationCodeHash(verificationCode);
+    const record = store.verificationCodes.find(item => item.candidateId === candidate.id && item.codeHash === codeHash);
+    if (!record) {
+      const recentAttempt = nowMs - Date.parse(candidate.lastAuthAttemptAt || "") < 10 * 60 * 1000;
+      candidate.authAttemptCount = recentAttempt ? Number(candidate.authAttemptCount || 0) + 1 : 1;
+      candidate.lastAuthAttemptAt = new Date(nowMs).toISOString();
+      if (candidate.authAttemptCount >= 5) {
+        candidate.authAttemptCount = 0;
+        candidate.lockedUntil = new Date(nowMs + 10 * 60 * 1000).toISOString();
+      }
+      await writeStore(store);
+      const locked = Date.parse(candidate.lockedUntil || "") > nowMs;
+      sendJson(res, locked ? 429 : 403, { ok: false, code: locked ? "TOO_MANY_ATTEMPTS" : "CODE_INVALID", error: locked ? "尝试次数过多，请10分钟后重试" : "核验码不正确，请核对后重试" });
+      return;
+    }
+    const codeStatus = verificationCodeStatus(record, nowMs);
+    if (codeStatus === "expired") {
+      sendJson(res, 410, { ok: false, code: "CODE_EXPIRED", error: "该核验码已过期，请联系招聘负责人重新获取" });
+      return;
+    }
+    if (codeStatus === "revoked") {
+      sendJson(res, 410, { ok: false, code: "CODE_REVOKED", error: "该核验码已作废，请联系招聘负责人重新获取" });
+      return;
+    }
+    if (codeStatus === "used") {
+      sendJson(res, 409, { ok: false, code: "CODE_USED", error: "该核验码已使用，请联系招聘负责人" });
+      return;
+    }
+
+    const now = new Date(nowMs).toISOString();
+    record.status = "used";
+    record.usedAt = now;
+    candidate.status = "started";
+    candidate.startedAt = candidate.startedAt || now;
+    candidate.updatedAt = now;
+    candidate.authAttemptCount = 0;
+    candidate.lastAuthAttemptAt = "";
+    candidate.lockedUntil = "";
+    await writeStore(store);
+
+    const token = signToken({ id: candidate.id, phoneHash: candidate.phoneHash, verificationCodeId: record.id, issuedAt: now });
+    sendJson(res, 200, { ok: true, token, candidate: publicCandidate(candidate, store) });
+  });
+}
+
+async function handleVerificationCodeList(req, res, user, url) {
   const store = await readStore();
-  const candidate = findCandidateByIdentity(store, name, phone);
-  if (!candidate) {
-    sendJson(res, 403, { ok: false, code: "MATCH_FAILED", error: "信息未匹配，请联系招聘负责人确认" });
+  const scopeHrId = requestedHrId(url, user);
+  const codes = store.verificationCodes
+    .filter(record => {
+      const candidate = store.candidates.find(item => item.id === record.candidateId);
+      return candidate && canViewCandidate(user, candidate, store) && matchesHrScope(candidate, store, scopeHrId);
+    })
+    .map(record => publicVerificationCode(record, store))
+    .sort((a, b) => String(b.generatedAt).localeCompare(String(a.generatedAt)));
+  sendJson(res, 200, { ok: true, codes, currentUser: publicHrUser(user), users: hrUsers.map(publicHrUser), scopeHrId: scopeHrId || "all" });
+}
+
+async function handleVerificationCodeGenerate(req, res, user) {
+  const payload = JSON.parse(await readBody(req) || "{}");
+  const candidateIds = [...new Set(Array.isArray(payload.candidateIds) ? payload.candidateIds.map(cleanText).filter(Boolean) : [cleanText(payload.candidateId)].filter(Boolean))];
+  const expiresInHours = Math.min(168, Math.max(1, Number(payload.expiresInHours) || 24));
+  if (!candidateIds.length) {
+    sendJson(res, 400, { ok: false, error: "请选择候选人" });
     return;
   }
-  if (candidate.status === "submitted") {
-    sendJson(res, 409, { ok: false, code: "ALREADY_SUBMITTED", error: "你已完成本次测评，不能重复作答" });
-    return;
-  }
+  await withStoreLock(async () => {
+    const store = await readStore();
+    const candidates = candidateIds.map(id => store.candidates.find(item => item.id === id)).filter(Boolean);
+    if (candidates.length !== candidateIds.length) {
+      sendJson(res, 404, { ok: false, error: "部分候选人不存在，请刷新名单" });
+      return;
+    }
+    if (candidates.some(candidate => !canViewCandidate(user, candidate, store))) {
+      sendJson(res, 403, { ok: false, error: "无权为其他 HR 的候选人生成核验码" });
+      return;
+    }
+    const now = new Date().toISOString();
+    const batchId = candidateIds.length > 1 ? `batch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` : "";
+    const records = candidates.map(candidate => createVerificationCode(store, candidate, user, expiresInHours, batchId, now));
+    store.verificationCodes = store.verificationCodes.slice(0, 5000);
+    await writeStore(store);
+    sendJson(res, 200, { ok: true, codes: records.map(record => publicVerificationCode(record, store)), batchId });
+  });
+}
 
-  const now = new Date().toISOString();
-  candidate.status = "started";
-  candidate.startedAt = candidate.startedAt || now;
-  candidate.updatedAt = now;
-  await writeStore(store);
+async function handleVerificationCodeRegenerate(req, res, id, user) {
+  const payload = JSON.parse(await readBody(req) || "{}");
+  const expiresInHours = Math.min(168, Math.max(1, Number(payload.expiresInHours) || 24));
+  await withStoreLock(async () => {
+    const store = await readStore();
+    const current = store.verificationCodes.find(item => item.id === id);
+    const candidate = current && store.candidates.find(item => item.id === current.candidateId);
+    if (!current || !candidate) {
+      sendJson(res, 404, { ok: false, error: "核验码记录不存在" });
+      return;
+    }
+    if (!canViewCandidate(user, candidate, store)) {
+      sendJson(res, 403, { ok: false, error: "无权操作其他 HR 的核验码" });
+      return;
+    }
+    const now = new Date().toISOString();
+    const record = createVerificationCode(store, candidate, user, expiresInHours, "", now);
+    await writeStore(store);
+    sendJson(res, 200, { ok: true, code: publicVerificationCode(record, store) });
+  });
+}
 
-  const token = signToken({ id: candidate.id, phoneHash: candidate.phoneHash, issuedAt: now });
-  sendJson(res, 200, { ok: true, token, candidate: publicCandidate(candidate, store) });
+async function handleVerificationCodeRevoke(req, res, id, user) {
+  await withStoreLock(async () => {
+    const store = await readStore();
+    const record = store.verificationCodes.find(item => item.id === id);
+    const candidate = record && store.candidates.find(item => item.id === record.candidateId);
+    if (!record || !candidate) {
+      sendJson(res, 404, { ok: false, error: "核验码记录不存在" });
+      return;
+    }
+    if (!canViewCandidate(user, candidate, store)) {
+      sendJson(res, 403, { ok: false, error: "无权操作其他 HR 的核验码" });
+      return;
+    }
+    if (record.status !== "revoked") {
+      record.status = "revoked";
+      record.revokedAt = new Date().toISOString();
+      await writeStore(store);
+    }
+    sendJson(res, 200, { ok: true, code: publicVerificationCode(record, store) });
+  });
 }
 
 async function handleCandidateList(req, res, user, url) {
@@ -443,6 +656,11 @@ async function handleSubmission(req, res) {
     sendJson(res, 403, { ok: false, code: "MATCH_FAILED", error: "信息未匹配，请联系招聘负责人确认" });
     return;
   }
+  const verificationRecord = store.verificationCodes.find(item => item.id === tokenPayload.verificationCodeId && item.candidateId === candidate.id);
+  if (!verificationRecord || verificationRecord.status !== "used") {
+    sendJson(res, 403, { ok: false, code: "CODE_SESSION_INVALID", error: "核验凭证已失效，请联系招聘负责人重新获取" });
+    return;
+  }
   if (candidate.status === "submitted") {
     sendJson(res, 409, { ok: false, code: "ALREADY_SUBMITTED", error: "你已完成本次测评，不能重复作答" });
     return;
@@ -565,6 +783,24 @@ const server = http.createServer(async (req, res) => {
       await handleCandidateAuth(req, res);
       return;
     }
+    if (url.pathname === "/api/verification-codes" && req.method === "GET") {
+      const user = getHrUser(url);
+      if (!user) {
+        sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
+        return;
+      }
+      await handleVerificationCodeList(req, res, user, url);
+      return;
+    }
+    if (url.pathname === "/api/verification-codes" && req.method === "POST") {
+      const user = getHrUser(url);
+      if (!user) {
+        sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
+        return;
+      }
+      await handleVerificationCodeGenerate(req, res, user);
+      return;
+    }
     if (url.pathname === "/api/submissions" && req.method === "GET") {
       const user = getHrUser(url);
       if (!user) {
@@ -623,6 +859,26 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       await handleCandidateReset(req, res, decodeURIComponent(resetMatch[1]), user);
+      return;
+    }
+    const regenerateCodeMatch = url.pathname.match(/^\/api\/verification-codes\/([^/]+)\/regenerate$/);
+    if (regenerateCodeMatch && req.method === "POST") {
+      const user = getHrUser(url);
+      if (!user) {
+        sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
+        return;
+      }
+      await handleVerificationCodeRegenerate(req, res, decodeURIComponent(regenerateCodeMatch[1]), user);
+      return;
+    }
+    const revokeCodeMatch = url.pathname.match(/^\/api\/verification-codes\/([^/]+)\/revoke$/);
+    if (revokeCodeMatch && req.method === "POST") {
+      const user = getHrUser(url);
+      if (!user) {
+        sendJson(res, 401, { ok: false, error: "HR_KEY_REQUIRED" });
+        return;
+      }
+      await handleVerificationCodeRevoke(req, res, decodeURIComponent(revokeCodeMatch[1]), user);
       return;
     }
 

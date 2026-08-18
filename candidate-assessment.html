@@ -318,7 +318,7 @@
         border: 1px solid rgba(255,255,255,.78);
         box-shadow: 0 18px 48px rgba(51,78,72,.14);
         padding: 12px;
-        grid-template-rows: auto minmax(0, 35fr) minmax(0, 18fr) minmax(0, 35fr);
+        grid-template-rows: auto minmax(0, 27fr) minmax(0, 17fr) minmax(0, 44fr);
         gap: 8px;
       }
       .intro-logo { width: 58px; }
@@ -326,10 +326,10 @@
       .intro-copy { padding: 0 2px; }
       .intro-title { margin-bottom: 6px; font-size: 28px; }
       .intro-subtitle { font-size: 13px; line-height: 1.45; }
-      .intro-form { padding: 10px; gap: 6px; border-radius: 16px; }
-      .intro-field label { margin-bottom: 4px; font-size: 13px; }
-      .intro-field input { height: 44px; border-radius: 13px; font-size: 16px; }
-      .intro-start { min-height: 46px; border-radius: 13px; font-size: 17px; }
+      .intro-form { padding: 8px 10px; gap: 5px; border-radius: 16px; }
+      .intro-field label { margin-bottom: 3px; font-size: 12px; }
+      .intro-field input { height: 40px; border-radius: 13px; font-size: 16px; }
+      .intro-start { min-height: 44px; border-radius: 13px; font-size: 17px; }
       .intro-error { min-height: 14px; font-size: 12px; }
     }
     @media (min-width: 960px) {
@@ -1303,7 +1303,7 @@
         </div>
         <div class="intro-copy">
           <h1 class="intro-title">灵相测评</h1>
-          <p class="intro-subtitle">请填写招聘预留的姓名和手机号，通过校验后即可开始测评。请根据第一反应作答，完成后系统将生成专属测评报告。</p>
+          <p class="intro-subtitle">请填写招聘预留的姓名、手机号和核验码，通过校验后即可开始测评。请根据第一反应作答，完成后系统将生成专属测评报告。</p>
         </div>
         <div class="intro-form">
           <div class="intro-field">
@@ -1313,6 +1313,10 @@
           <div class="intro-field">
             <label for="introPhone">手机号</label>
             <input id="introPhone" autocomplete="tel" inputmode="numeric" maxlength="13" pattern="[0-9]{11}" placeholder="请输入11位招聘预留手机号">
+          </div>
+          <div class="intro-field">
+            <label for="introCode">核验码</label>
+            <input id="introCode" autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="请输入6位核验码">
           </div>
           <button class="intro-start" id="introStart" type="button" disabled>开始测评</button>
           <div class="intro-error" id="introError" aria-live="polite"></div>
@@ -3015,6 +3019,7 @@
       intro: document.querySelector("#candidateIntro"),
       introName: document.querySelector("#introName"),
       introPhone: document.querySelector("#introPhone"),
+      introCode: document.querySelector("#introCode"),
       introStart: document.querySelector("#introStart"),
       introError: document.querySelector("#introError"),
       toast: document.querySelector("#toast")
@@ -3033,7 +3038,7 @@
         updateIntroFormState();
         const answeredCount = Object.keys(state.answers).length;
         const completedDraft = answeredCount >= state.questions.length;
-        document.body.dataset.gate = state.candidateToken && answeredCount ? "quiz" : "intro";
+        document.body.dataset.gate = state.candidateToken ? "quiz" : "intro";
         setView(completedDraft || state.view === "candidate" ? "candidate" : "answer");
         if (!state.candidateToken) setView("answer");
         if (!restoredDraft || !answeredCount || !state.candidateToken) setTimeout(() => els.introName.focus(), 80);
@@ -3070,9 +3075,11 @@
         els.introStart.addEventListener("click", startCandidateAssessment);
         els.introName.addEventListener("focus", preloadQuizAssets, { once: true });
         els.introPhone.addEventListener("focus", preloadQuizAssets, { once: true });
+        els.introCode.addEventListener("focus", preloadQuizAssets, { once: true });
         window.setTimeout(preloadQuizAssets, 1200);
-        [els.introName, els.introPhone].forEach(input => {
+        [els.introName, els.introPhone, els.introCode].forEach(input => {
           input.addEventListener("input", () => {
+            if (input === els.introCode) input.value = input.value.replace(/[^\d]/g, "").slice(0, 6);
             els.introError.textContent = "";
             updateIntroFormState();
           });
@@ -3104,7 +3111,8 @@
     function updateIntroFormState() {
       const nameComplete = Boolean(els.introName.value.trim());
       const phoneComplete = /^\d{11}$/.test(normalizePhoneInput(els.introPhone.value));
-      els.introStart.disabled = introAuthPending || !nameComplete || !phoneComplete;
+      const codeComplete = /^\d{6}$/.test(els.introCode.value.trim());
+      els.introStart.disabled = introAuthPending || !nameComplete || !phoneComplete || !codeComplete;
       els.introStart.setAttribute("aria-busy", String(introAuthPending));
     }
 
@@ -3114,12 +3122,12 @@
       updateIntroFormState();
     }
 
-    async function requestCandidateAuth(name, phone) {
+    async function requestCandidateAuth(name, phone, verificationCode) {
       const response = await fetch(AUTH_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
-        body: JSON.stringify({ name, phone })
+        body: JSON.stringify({ name, phone, verificationCode })
       });
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.ok) return data;
@@ -3130,6 +3138,7 @@
     async function startCandidateAssessment() {
       const name = els.introName.value.trim();
       const phone = normalizePhoneInput(els.introPhone.value);
+      const verificationCode = els.introCode.value.trim();
       if (introAuthPending) return;
       if (!name) {
         els.introError.textContent = "请输入姓名";
@@ -3141,11 +3150,16 @@
         els.introPhone.focus();
         return;
       }
+      if (!/^\d{6}$/.test(verificationCode)) {
+        els.introError.textContent = "请输入6位核验码";
+        els.introCode.focus();
+        return;
+      }
       els.introError.textContent = "";
       setIntroLoading(true);
       let authData;
       try {
-        authData = await requestCandidateAuth(name, phone);
+        authData = await requestCandidateAuth(name, phone, verificationCode);
       } catch (error) {
         els.introError.textContent = error.message || "校验失败，请稍后重试";
         setIntroLoading(false);
@@ -3161,6 +3175,7 @@
       state.candidateToken = authData.token;
       state.candidateId = authData.candidate.id;
       state.candidatePhone = phone;
+      els.introCode.value = "";
       if (!shouldResume) {
         state.answers = {};
         state.index = 0;
@@ -3711,6 +3726,7 @@
       [els.name, els.role, els.years, els.open].forEach(input => input.value = "");
       if (els.introName) els.introName.value = "";
       if (els.introPhone) els.introPhone.value = "";
+      if (els.introCode) els.introCode.value = "";
       els.date.valueAsDate = new Date();
       localStorage.removeItem(DRAFT_KEY);
       if (candidateMode) document.body.dataset.gate = "intro";
