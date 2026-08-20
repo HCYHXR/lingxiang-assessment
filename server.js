@@ -15,8 +15,8 @@ const port = Number(process.env.PORT || 8787);
 const host = process.env.HOST || "0.0.0.0";
 const hrKey = process.env.HR_KEY || "m2-hr-2026";
 const tokenSecret = process.env.CANDIDATE_TOKEN_SECRET || hrKey || "lingxiang-local-token-secret";
-const candidateVersion = "4060";
-const hrVersion = "6010";
+const candidateVersion = "4070";
+const hrVersion = "6020";
 const hrRoleKey = id => crypto.createHmac("sha256", hrKey || tokenSecret).update(`hr:${id}`).digest("hex").slice(0, 32);
 const hrUsers = [
   { id: "admin", name: "管理员", role: "admin", key: process.env.HR_KEY || "m2-hr-2026" },
@@ -43,6 +43,7 @@ function cacheHeaderFor(filePath = "") {
   const ext = path.extname(filePath).toLowerCase();
   if ([".png", ".jpg", ".jpeg", ".webp", ".svg"].includes(ext)) return "public, max-age=31536000, immutable";
   if (ext === ".json") return "public, max-age=3600";
+  if (ext === ".html") return "no-store";
   if ([".html", ".js", ".css"].includes(ext)) return "public, max-age=60, must-revalidate";
   return "no-store, no-cache, must-revalidate, proxy-revalidate";
 }
@@ -191,7 +192,7 @@ function verifyToken(token) {
 function cleanAnswers(answers) {
   const cleaned = {};
   Object.entries(answers || {}).forEach(([key, value]) => {
-    if (/^\d+$/.test(key) && /^[A-E]$/.test(String(value))) cleaned[key] = String(value);
+    if (/^(?:\d+|q\d{2,3})$/.test(key) && /^[A-E]$/.test(String(value))) cleaned[key] = String(value);
   });
   return cleaned;
 }
@@ -689,6 +690,8 @@ async function handleSubmission(req, res) {
     answers,
     result: payload.result || null,
     answerCount: Object.keys(answers).length,
+    assessmentVersion: cleanText(payload.assessmentVersion || "v1"),
+    questionCount: Number(payload.questionCount) || Object.keys(answers).length,
     hrId: candidateHrId(candidate, store),
     hrOwner: candidateHrName(candidate, store),
   };

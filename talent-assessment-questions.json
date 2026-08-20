@@ -20,7 +20,9 @@
         "key": "D",
         "text": "拼完后拆掉重新挑战更难的"
       }
-    ]
+    ],
+    "id": "q01",
+    "assessmentVersion": "v2"
   },
   {
     "number": 2,
@@ -43,7 +45,9 @@
         "key": "D",
         "text": "组织协调、张罗事务的人"
       }
-    ]
+    ],
+    "id": "q02",
+    "assessmentVersion": "v2"
   },
   {
     "number": 3,
@@ -66,7 +70,9 @@
         "key": "D",
         "text": "东西有固定位置,用完归位"
       }
-    ]
+    ],
+    "id": "q03",
+    "assessmentVersion": "v2"
   },
   {
     "number": 4,
@@ -89,7 +95,9 @@
         "key": "D",
         "text": "引导他向老师或家长求助"
       }
-    ]
+    ],
+    "id": "q04",
+    "assessmentVersion": "v2"
   },
   {
     "number": 5,
@@ -112,7 +120,9 @@
         "key": "D",
         "text": "看答案,理解解题思路"
       }
-    ]
+    ],
+    "id": "q05",
+    "assessmentVersion": "v2"
   },
   {
     "number": 6,
@@ -135,7 +145,9 @@
         "key": "D",
         "text": "热心、愿意借笔记给我的"
       }
-    ]
+    ],
+    "id": "q06",
+    "assessmentVersion": "v2"
   },
   {
     "number": 7,
@@ -158,7 +170,9 @@
         "key": "D",
         "text": "没想过,觉得没必要"
       }
-    ]
+    ],
+    "id": "q07",
+    "assessmentVersion": "v2"
   },
   {
     "number": 8,
@@ -181,7 +195,9 @@
         "key": "D",
         "text": "好胜、不服输"
       }
-    ]
+    ],
+    "id": "q08",
+    "assessmentVersion": "v2"
   },
   {
     "number": 9,
@@ -204,7 +220,9 @@
         "key": "D",
         "text": "我喜欢被需要的感觉,别人找我帮忙我会很有动力"
       }
-    ]
+    ],
+    "id": "q09",
+    "assessmentVersion": "v2"
   },
   {
     "number": 10,
@@ -227,7 +245,9 @@
         "key": "D",
         "text": "转移话题,缓和气氛"
       }
-    ]
+    ],
+    "id": "q10",
+    "assessmentVersion": "v2"
   },
   {
     "number": 11,
@@ -250,7 +270,9 @@
         "key": "D",
         "text": "先冷静分析压力源,再找对策"
       }
-    ]
+    ],
+    "id": "q11",
+    "assessmentVersion": "v2"
   },
   {
     "number": 12,
@@ -273,7 +295,9 @@
         "key": "D",
         "text": "优化工作方法,提高效率"
       }
-    ]
+    ],
+    "id": "q12",
+    "assessmentVersion": "v2"
   },
   {
     "number": 13,
@@ -296,7 +320,9 @@
         "key": "D",
         "text": "设计一个逻辑框架再整理,有条不紊"
       }
-    ]
+    ],
+    "id": "q13",
+    "assessmentVersion": "v2"
   },
   {
     "number": 14,
@@ -319,7 +345,9 @@
         "key": "D",
         "text": "经验和惯例"
       }
-    ]
+    ],
+    "id": "q14",
+    "assessmentVersion": "v2"
   },
   {
     "number": 15,
@@ -342,7 +370,9 @@
         "key": "D",
         "text": "“数据一点错都没有”"
       }
-    ]
+    ],
+    "id": "q15",
+    "assessmentVersion": "v2"
   },
   {
     "number": 16,
@@ -365,7 +395,9 @@
         "key": "D",
         "text": "“你把流程理得特别顺,效率提高了”"
       }
-    ]
+    ],
+    "id": "q16",
+    "assessmentVersion": "v2"
   },
   {
     "number": 17,
@@ -388,7 +420,9 @@
         "key": "D",
         "text": "直接动手试,边做边改"
       }
-    ]
+    ],
+    "id": "q17",
+    "assessmentVersion": "v2"
   },
   {
     "number": 18,
@@ -411,7 +445,9 @@
         "key": "D",
         "text": "坚持己见,但保留合作"
       }
-    ]
+    ],
+    "id": "q18",
+    "assessmentVersion": "v2"
   },
   {
     "number": 19,
@@ -434,7 +470,9 @@
         "key": "D",
         "text": "执行性强,不拖延"
       }
-    ]
+    ],
+    "id": "q19",
+    "assessmentVersion": "v2"
   },
   {
     "number": 20,
@@ -457,7 +495,9 @@
         "key": "D",
         "text": "不喜欢,影响生活平衡"
       }
-    ]
+    ],
+    "id": "q20",
+    "assessmentVersion": "v2"
   },
   {
     "number": 21,
@@ -480,7 +520,9 @@
         "key": "D",
         "text": "需要耐心细致、反复核验的"
       }
-    ]
+    ],
+    "id": "q21",
+    "assessmentVersion": "v2"
   },
   {
     "number": 22,
@@ -503,7 +545,9 @@
         "key": "D",
         "text": "觉得是成长必经之路"
       }
-    ]
+    ],
+    "id": "q22",
+    "assessmentVersion": "v2"
   },
   {
     "number": 23,
@@ -526,7 +570,9 @@
         "key": "D",
         "text": "放手让我做,信任我的判断"
       }
-    ]
+    ],
+    "id": "q23",
+    "assessmentVersion": "v2"
   },
   {
     "number": 24,
@@ -549,7 +595,9 @@
         "key": "D",
         "text": "推动和鞭策"
       }
-    ]
+    ],
+    "id": "q24",
+    "assessmentVersion": "v2"
   },
   {
     "number": 25,
@@ -572,7 +620,9 @@
         "key": "D",
         "text": "给资料让对方自己看"
       }
-    ]
+    ],
+    "id": "q25",
+    "assessmentVersion": "v2"
   },
   {
     "number": 26,
@@ -595,7 +645,9 @@
         "key": "D",
         "text": "有一套自己的优先级管理方法"
       }
-    ]
+    ],
+    "id": "q26",
+    "assessmentVersion": "v2"
   },
   {
     "number": 27,
@@ -618,7 +670,9 @@
         "key": "D",
         "text": "计划被打乱、任务频繁变动"
       }
-    ]
+    ],
+    "id": "q27",
+    "assessmentVersion": "v2"
   },
   {
     "number": 28,
@@ -641,7 +695,9 @@
         "key": "D",
         "text": "领导建议或要求"
       }
-    ]
+    ],
+    "id": "q28",
+    "assessmentVersion": "v2"
   },
   {
     "number": 29,
@@ -664,7 +720,9 @@
         "key": "D",
         "text": "开放包容、鼓励创新"
       }
-    ]
+    ],
+    "id": "q29",
+    "assessmentVersion": "v2"
   },
   {
     "number": 30,
@@ -687,7 +745,9 @@
         "key": "D",
         "text": "按已有步骤操作,确保不出错"
       }
-    ]
+    ],
+    "id": "q30",
+    "assessmentVersion": "v2"
   },
   {
     "number": 31,
@@ -714,7 +774,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q31",
+    "assessmentVersion": "v2"
   },
   {
     "number": 32,
@@ -741,7 +803,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q32",
+    "assessmentVersion": "v2"
   },
   {
     "number": 33,
@@ -768,7 +832,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q33",
+    "assessmentVersion": "v2"
   },
   {
     "number": 34,
@@ -795,7 +861,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q34",
+    "assessmentVersion": "v2"
   },
   {
     "number": 35,
@@ -822,7 +890,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q35",
+    "assessmentVersion": "v2"
   },
   {
     "number": 36,
@@ -849,7 +919,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q36",
+    "assessmentVersion": "v2"
   },
   {
     "number": 37,
@@ -876,7 +948,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q37",
+    "assessmentVersion": "v2"
   },
   {
     "number": 38,
@@ -903,7 +977,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q38",
+    "assessmentVersion": "v2"
   },
   {
     "number": 39,
@@ -930,7 +1006,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q39",
+    "assessmentVersion": "v2"
   },
   {
     "number": 40,
@@ -957,7 +1035,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q40",
+    "assessmentVersion": "v2"
   },
   {
     "number": 41,
@@ -984,7 +1064,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q41",
+    "assessmentVersion": "v2"
   },
   {
     "number": 42,
@@ -1011,7 +1093,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q42",
+    "assessmentVersion": "v2"
   },
   {
     "number": 43,
@@ -1038,7 +1122,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q43",
+    "assessmentVersion": "v2"
   },
   {
     "number": 44,
@@ -1065,7 +1151,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q44",
+    "assessmentVersion": "v2"
   },
   {
     "number": 45,
@@ -1092,7 +1180,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q45",
+    "assessmentVersion": "v2"
   },
   {
     "number": 46,
@@ -1119,7 +1209,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q46",
+    "assessmentVersion": "v2"
   },
   {
     "number": 47,
@@ -1146,7 +1238,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q47",
+    "assessmentVersion": "v2"
   },
   {
     "number": 48,
@@ -1173,7 +1267,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q48",
+    "assessmentVersion": "v2"
   },
   {
     "number": 49,
@@ -1200,7 +1296,9 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q49",
+    "assessmentVersion": "v2"
   },
   {
     "number": 50,
@@ -1227,6 +1325,8 @@
         "key": "E",
         "text": "非常不同意"
       }
-    ]
+    ],
+    "id": "q50",
+    "assessmentVersion": "v2"
   }
 ]
