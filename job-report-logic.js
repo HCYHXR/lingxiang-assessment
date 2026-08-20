@@ -136,6 +136,113 @@
     }
   };
 
+  const DIMENSION_KEYS = {
+    "外向性": "extraversion",
+    extraversion: "extraversion",
+    "宜人性": "agreeableness",
+    agreeableness: "agreeableness",
+    "尽责性": "conscientiousness",
+    conscientiousness: "conscientiousness",
+    "情绪稳定性": "emotionalStability",
+    emotionalStability: "emotionalStability",
+    "开放性": "openness",
+    openness: "openness"
+  };
+
+  const ROLE_DIMENSION_CONTEXTS = {
+    "招聘": {
+      extraversion: "外向性主要影响岗位需求访谈、候选人沟通和业务方推进时的表达主动性与转化节奏",
+      agreeableness: "宜人性主要影响候选人体验、业务分歧处理，以及拒绝或谈判场景中的合作边界",
+      conscientiousness: "尽责性主要影响人才漏斗计划、面试节点跟进、信息记录和录用流程闭环",
+      emotionalStability: "情绪稳定性主要影响难招岗位压力、候选人反复变化和业务催促下的判断质量",
+      openness: "开放性主要影响新岗位学习、人才地图调整、寻访渠道尝试和招聘策略迭代"
+    },
+    "系统策划": {
+      extraversion: "外向性主要影响系统方案讲解、数值与机制评审，以及推动程序、美术和运营形成共识的效率",
+      agreeableness: "宜人性主要影响规则争议处理、跨职能约束承接，以及在体验目标与制作成本之间协调方案的方式",
+      conscientiousness: "尽责性主要影响系统文档结构、规则边界、数据口径和版本迭代记录的完整度",
+      emotionalStability: "情绪稳定性主要影响机制被推翻、数据偏离预期或版本频繁调整时的分析与决策稳定度",
+      openness: "开放性主要影响新玩法构思、机制组合、数据反馈吸收和长期系统迭代思路"
+    },
+    "执行策划": {
+      extraversion: "外向性主要影响需求确认、配置联调、验收反馈和跨部门信息同步的及时性",
+      agreeableness: "宜人性主要影响需求承接、修改意见消化，以及与策划、美术、程序和测试配合时的沟通方式",
+      conscientiousness: "尽责性主要影响配置准确度、文档整理、版本检查和细节问题闭环",
+      emotionalStability: "情绪稳定性主要影响需求连续变更、返工和上线节点临近时的执行稳定度",
+      openness: "开放性主要影响新编辑器学习、配置方法优化、反馈吸收和对新玩法需求的适应速度"
+    },
+    "AI美术（场景）": {
+      extraversion: "外向性主要影响视觉需求澄清、方案展示、提示词思路说明和与策划及原画的反馈节奏",
+      agreeableness: "宜人性主要影响审美分歧处理、修改意见承接，以及在个人偏好与项目风格之间的协作方式",
+      conscientiousness: "尽责性主要影响提示词版本记录、素材规范、风格一致性检查和生成细节修正",
+      emotionalStability: "情绪稳定性主要影响反复抽卡、方案否定和多轮修改时的耐心与输出稳定度",
+      openness: "开放性主要影响 AI 工具学习、模型与工作流尝试、提示词调整和视觉方案创新"
+    },
+    "场景原画": {
+      extraversion: "外向性主要影响场景概念讲解、需求澄清、阶段评审和与策划及三维团队的沟通效率",
+      agreeableness: "宜人性主要影响审美冲突处理、修改方向承接，以及个人表达与项目风格之间的协调方式",
+      conscientiousness: "尽责性主要影响透视结构、光影细节、图层规范和阶段稿件的稳定完成度",
+      emotionalStability: "情绪稳定性主要影响方案被否、反复修改和高强度出图阶段的画面质量与节奏",
+      openness: "开放性主要影响视觉灵感拓展、场景氛围创新、新工具运用和不同美术风格的适应度"
+    },
+    "游戏测试": {
+      extraversion: "外向性主要影响缺陷描述、复现信息同步、优先级沟通和推动研发响应的主动性",
+      agreeableness: "宜人性主要影响与策划及研发讨论缺陷归因、处理争议和推动问题关闭时的合作方式",
+      conscientiousness: "尽责性主要影响测试用例覆盖、复现步骤记录、回归验证和缺陷生命周期闭环",
+      emotionalStability: "情绪稳定性主要影响重复回归、偶现问题追踪和版本上线压力下的耐心与判断稳定度",
+      openness: "开放性主要影响新测试工具学习、边界场景探索、测试方法改进和对新玩法规则的理解速度"
+    },
+    "服务端开发": {
+      extraversion: "外向性主要影响接口约定沟通、风险预警、事故信息同步和跨团队排障推进的主动性",
+      agreeableness: "宜人性主要影响接口分歧处理、需求承接，以及与客户端、策划和运维协作时的边界管理",
+      conscientiousness: "尽责性主要影响接口契约、数据一致性、异常处理、代码评审和上线检查的严谨度",
+      emotionalStability: "情绪稳定性主要影响线上故障、高并发异常和紧急回滚时的止损判断与响应秩序",
+      openness: "开放性主要影响新架构与中间件学习、性能方案比较和对业务变化的技术适应度"
+    },
+    "客户端开发": {
+      extraversion: "外向性主要影响功能需求澄清、UI与交互联调、接口对接和版本风险同步的主动性",
+      agreeableness: "宜人性主要影响与策划、美术、服务端和测试处理实现分歧及联调阻塞时的合作方式",
+      conscientiousness: "尽责性主要影响功能验收、资源规范、性能检查、设备适配和缺陷闭环",
+      emotionalStability: "情绪稳定性主要影响需求变更、联调反复、性能问题和上线前集中修复时的交付稳定度",
+      openness: "开放性主要影响新引擎特性学习、跨端方案尝试、性能优化思路和交互实现创新"
+    },
+    "通用游戏公司岗位": {
+      extraversion: "外向性主要影响跨角色信息同步、反馈频率、协作发起和问题升级的主动性",
+      agreeableness: "宜人性主要影响需求承接、冲突处理，以及与策划、美术、研发和测试合作时的沟通边界",
+      conscientiousness: "尽责性主要影响任务计划、交付稳定性、规则遵守、细节检查和结果闭环",
+      emotionalStability: "情绪稳定性主要影响版本变化、反复修改、突发问题和时间压力下的持续表现",
+      openness: "开放性主要影响新工具学习、新玩法理解、新技术接受和工作方法调整速度"
+    }
+  };
+
+  const DIMENSION_LEVEL_COPY = {
+    extraversion: {
+      high: "当前分数较高，通常能主动发起沟通并维持反馈节奏；需留意表达过快、占用讨论空间或推进先于倾听。",
+      medium: "当前分数中等，主动沟通与独立处理相对均衡；面试可追问一次信息不一致时，如何确定沟通对象、频率和最终结论。",
+      low: "当前分数较低，可能在高频同步或主动推动场景中反馈偏慢；面试应核实其何时升级问题、如何确保协作方及时获得关键信息。"
+    },
+    agreeableness: {
+      high: "当前分数较高，通常愿意理解他人约束并维护合作关系；需留意过度迁就、回避冲突或对不合理需求缺少边界。",
+      medium: "当前分数中等，合作意愿与原则判断相对均衡；面试可追问一次跨职能意见冲突时，如何承接需求并守住质量标准。",
+      low: "当前分数较低，可能更强调个人判断，在冲突或需求变化中显得配合度不足；面试应核实其处理分歧、接收反馈和达成共识的方法。"
+    },
+    conscientiousness: {
+      high: "当前分数较高，通常能按计划推进并保持规则、细节和交付闭环；需留意过度追求完整、检查成本过高或面对变化不够灵活。",
+      medium: "当前分数中等，计划性与应变空间相对均衡；面试可要求其还原一次任务拆解、过程检查和最终验收的具体做法。",
+      low: "当前分数较低，可能在多任务、长周期或细节密集场景中出现遗漏；面试应核实其如何使用清单、节点和复核机制保证稳定交付。"
+    },
+    emotionalStability: {
+      high: "当前分数较高，面对压力、返工和突发问题时通常能保持节奏与判断；需留意过度淡化风险、反馈情绪不敏感或求助时点偏晚。",
+      medium: "当前分数中等，常规压力下表现相对平稳；面试可追问一次版本突变或线上异常时，如何排序、同步、止损并恢复状态。",
+      low: "当前分数较低，连续变更、反复修改或紧急问题可能明显影响节奏；面试应核实其压力预警、情绪恢复和高压决策方式。"
+    },
+    openness: {
+      high: "当前分数较高，通常愿意学习新工具并提出新思路；需留意探索过多、频繁换方案或创新快于落地验证。",
+      medium: "当前分数中等，对新方法保持开放但通常会考虑现实约束；面试可追问一次学习新工具或适应新玩法后，如何转化为可交付结果。",
+      low: "当前分数较低，面对陌生工具、技术路线或创新需求时可能更依赖既有经验；面试应核实其学习路径、试错意愿和适应变化的实际速度。"
+    }
+  };
+
   function clamp(value, fallback) {
     const number = Number(value);
     return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : fallback;
@@ -218,9 +325,11 @@
   }
 
   function dimensionAdvice(report, dimensionName, percent) {
-    const level = percent >= 75 ? "较高" : percent >= 55 ? "中等" : "较低";
-    const focus = report.abilities.slice(0, 2).map(item => item.label).join("、");
-    return `该维度当前为${level}水平。在${report.roleName}中，需结合${focus}相关项目案例判断其实际表现。`;
+    const dimensionKey = DIMENSION_KEYS[dimensionName] || "conscientiousness";
+    const roleContexts = ROLE_DIMENSION_CONTEXTS[report?.roleName] || ROLE_DIMENSION_CONTEXTS["通用游戏公司岗位"];
+    const score = clamp(percent, 0);
+    const levelKey = score >= 75 ? "high" : score >= 55 ? "medium" : "low";
+    return `${roleContexts[dimensionKey]}。${DIMENSION_LEVEL_COPY[dimensionKey][levelKey]}`;
   }
 
   window.LingxiangJobReports = { build, dimensionAdvice, profiles: JOB_PROFILES };

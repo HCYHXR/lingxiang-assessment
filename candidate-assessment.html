@@ -1424,7 +1424,7 @@
   </main>
   <div class="toast" id="toast"></div>
 
-  <script src="job-report-logic.js?v=20260820"></script>
+  <script src="job-report-logic.js?v=20260820-2"></script>
   <script>
     const EMBEDDED_QUESTIONS = [
       {
@@ -3861,6 +3861,7 @@
                     <div class="hr-bar-track"><div class="hr-bar-fill" style="width:${result.bigFivePercent[key]}%"></div></div>
                     <strong>${value}/${result.bigFiveMax[key]} · ${result.bigFivePercent[key]}%</strong>
                   </div>
+                  <p><b>${bigFiveNames[key]}岗位参考：</b>${window.LingxiangJobReports.dimensionAdvice(jobReport, bigFiveNames[key], result.bigFivePercent[key] || 0)}</p>
                 `).join("")}
               </section>
             </div>
@@ -3937,6 +3938,10 @@
         ["开放性", result.bigFive.openness],
         ["最高维度", `${bigFiveNames[topBigFive[0]]}（${level(topBigFive[1], result.bigFiveMax[topBigFive[0]])}）`],
         ["需验证维度", `${bigFiveNames[lowBigFive[0]]}（${level(lowBigFive[1], result.bigFiveMax[lowBigFive[0]])}）`],
+        ...Object.entries(result.bigFivePercent).map(([key, percent]) => [
+          `${bigFiveNames[key]}岗位参考`,
+          window.LingxiangJobReports.dimensionAdvice(jobReport, bigFiveNames[key], percent)
+        ]),
         ...jobReport.abilities.map(item => [`岗位能力-${item.label}`, `${item.score}%（权重 ${item.weight}%）`]),
         ["综合画像", jobReport.summary],
         ["优势表现", jobReport.advantages.join("；")],
