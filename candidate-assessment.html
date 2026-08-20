@@ -1424,6 +1424,7 @@
   </main>
   <div class="toast" id="toast"></div>
 
+  <script src="job-report-logic.js?v=20260820"></script>
   <script>
     const EMBEDDED_QUESTIONS = [
       {
@@ -3785,6 +3786,7 @@
     function renderHrReport() {
       const result = calculate();
       const profile = profiles[result.primary];
+      const jobReport = window.LingxiangJobReports.build(result, els.role.value);
       const rankedBigFiveScores = rankedBigFive(result);
       const topBigFive = rankedBigFiveScores[0];
       const lowBigFive = rankedBigFiveScores[rankedBigFiveScores.length - 1];
@@ -3814,7 +3816,7 @@
           </header>
 
           <div class="hr-subhead">2. HR界面：候选人测评结果（可以打印或者导出为PDF格式）</div>
-          <div class="hr-report-name">魔兔人才筛选评估报告</div>
+          <div class="hr-report-name">${jobReport.reportTitle}</div>
 
           <div class="hr-meta-grid">
             <div class="hr-meta">候选人：${escapeHtml(els.name.value || "-")}</div>
@@ -3825,7 +3827,7 @@
           <section class="hr-profile">
             <div class="hr-profile-kicker">CANDIDATE PROFILE</div>
             <div class="hr-profile-main">${hrTitle}</div>
-            <div class="hr-profile-sub">主类型：${hrTitle} · ${profiles[result.primary].fit[0] || "HR岗位"}</div>
+            <div class="hr-profile-sub">主类型：${hrTitle} · 岗位：${jobReport.roleName}</div>
           </section>
 
           <section class="hr-score-strip">
@@ -3842,8 +3844,13 @@
               <section class="hr-panel emphasis">
                 <h3>综合画像</h3>
                 <p><b>主类型：${hrTitle}</b>${result.isBalanced ? "（整合型）" : ""}</p>
-                <p>${profile.short}</p>
-                <p><b>HR 岗位匹配：</b>${profile.fit.join("、")}</p>
+                <p><b>${jobReport.roleName}适配度：${jobReport.fit}%（${jobReport.fitLevel}）</b></p>
+                <p>${jobReport.summary}</p>
+              </section>
+
+              <section class="hr-panel">
+                <h3>优势表现</h3>
+                <ul>${jobReport.advantages.map(item => `<li>${item}</li>`).join("")}</ul>
               </section>
 
               <section class="hr-panel">
@@ -3862,27 +3869,31 @@
               <section class="hr-panel">
                 <h3>风险点与建议</h3>
                 <ul>
-                  ${profile.risks.map(item => `<li>${item}</li>`).join("")}
-                  <li>${bigFiveAdvice[lowBigFive[0]][1]}</li>
-                  <li>最高维度：${bigFiveNames[topBigFive[0]]}（${level(topBigFive[1], result.bigFiveMax[topBigFive[0]])}）；需验证维度：${bigFiveNames[lowBigFive[0]]}（${level(lowBigFive[1], result.bigFiveMax[lowBigFive[0]])}）。</li>
+                  ${jobReport.risks.map(item => `<li>${item}</li>`).join("")}
                 </ul>
               </section>
 
               <section class="hr-panel">
                 <h3>面试验证重点</h3>
-                <ul>${profile.interview.map(item => `<li>${item}</li>`).join("")}</ul>
+                <ul>${jobReport.interviews.map(item => `<li>${item}</li>`).join("")}</ul>
               </section>
             </div>
           </div>
 
           <section class="hr-detail">
+            <h3>岗位能力得分</h3>
+            <ul>
+              ${jobReport.abilities.map(item => `<li><b>${item.label}：</b>${item.score}%（权重 ${item.weight}%）</li>`).join("")}
+            </ul>
+          </section>
+
+          <section class="hr-detail">
             <h3>${hrTitle}</h3>
             <ul>
               <li><b>个性特点：</b>${profile.strengths[0]}，${profile.short}</li>
-              <li><b>优点：</b>${profile.strengths[1]}</li>
-              <li><b>不足：</b>${profile.risks[0]}</li>
-              <li><b>HR岗位匹配：</b>${profile.fit.join("、")}</li>
-              <li><b>管理建议：</b>${profile.develop[0]}</li>
+              <li><b>优势表现：</b>${jobReport.advantages.join("；")}</li>
+              <li><b>风险点与建议：</b>${jobReport.risks.join("；")}</li>
+              <li><b>管理建议/培养建议：</b>${jobReport.management}</li>
               <li><b>开放题记录：</b>${escapeHtml(els.open.value || "未填写")}</li>
             </ul>
           </section>
@@ -3892,7 +3903,7 @@
         button.addEventListener("click", () => {
           const action = button.dataset.hrAction;
           if (action === "xls") {
-            downloadHrCsv(result, profile, hrTitle, topBigFive, lowBigFive);
+            downloadHrCsv(result, jobReport, hrTitle, topBigFive, lowBigFive);
             return;
           }
           window.print();
@@ -3900,15 +3911,20 @@
       });
     }
 
-    function downloadHrCsv(result, profile, hrTitle, topBigFive, lowBigFive) {
+    function downloadHrCsv(result, jobReport, hrTitle, topBigFive, lowBigFive) {
       const rows = [
         ["字段", "内容"],
+        ["报告名称", jobReport.reportTitle],
         ["候选人", els.name.value || "-"],
         ["测评岗位", els.role.value || "-"],
+        ["匹配岗位画像", jobReport.roleName],
         ["工作年限", els.years.value || "-"],
         ["报告日期", els.date.value || "-"],
+        ["测评版本", result.assessmentVersion || "v1"],
+        ["题目数量", result.questionCount || state.loadedQuestionCount || state.questions.length],
         ["主类型", hrTitle],
-        ["岗位适配度", `${result.fit}%`],
+        ["岗位适配度", `${jobReport.fit}%`],
+        ["适配度等级", jobReport.fitLevel],
         ["老虎", result.traits.tiger],
         ["孔雀", result.traits.peacock],
         ["考拉", result.traits.koala],
@@ -3921,9 +3937,12 @@
         ["开放性", result.bigFive.openness],
         ["最高维度", `${bigFiveNames[topBigFive[0]]}（${level(topBigFive[1], result.bigFiveMax[topBigFive[0]])}）`],
         ["需验证维度", `${bigFiveNames[lowBigFive[0]]}（${level(lowBigFive[1], result.bigFiveMax[lowBigFive[0]])}）`],
-        ["HR岗位匹配", profile.fit.join("、")],
-        ["风险点", profile.risks.join("；")],
-        ["面试验证重点", profile.interview.join("；")],
+        ...jobReport.abilities.map(item => [`岗位能力-${item.label}`, `${item.score}%（权重 ${item.weight}%）`]),
+        ["综合画像", jobReport.summary],
+        ["优势表现", jobReport.advantages.join("；")],
+        ["风险点与建议", jobReport.risks.join("；")],
+        ["面试验证重点", jobReport.interviews.join("；")],
+        ["管理建议/培养建议", jobReport.management],
         ["开放题记录", els.open.value || "未填写"]
       ];
       const csv = "\ufeff" + rows.map(row => row.map(csvCell).join(",")).join("\n");

@@ -961,6 +961,7 @@
   </main>
   <div class="toast" id="toast"></div>
 
+  <script src="job-report-logic.js?v=20260820"></script>
   <script>
     const EMBEDDED_QUESTIONS = [
       {
@@ -2695,11 +2696,11 @@
       }
     };
     const bigFiveAdvice = {
-      extraversion: ["高分适合招聘、培训、文化、员工关系、雇主品牌。", "低分适合薪酬数据、HRIS、档案、合规审计等深度工作。"],
-      agreeableness: ["高分适合员工关系、员工体验、培训支持、SSC 服务岗。", "低分可关注薪酬谈判、绩效执行、合规审计、劳动纠纷处理。"],
-      conscientiousness: ["高分适合薪酬福利、绩效、HRIS、HR 合规和流程型岗位。", "低分更需要清单、节点检查和同伴复核机制。"],
-      emotionalStability: ["高分适合高压招聘、劳动关系纠纷、复杂 HRBP 场景。", "低分建议先从压力较小、边界明确的支持型岗位切入。"],
-      openness: ["高分适合雇主品牌、文化创新、培训课程设计、组织发展。", "低分适合薪酬核算、绩效管理、HR 合规和 SSC 标准化岗位。"]
+      extraversion: ["更愿意主动表达、建立连接并在互动中推动信息流动。", "更偏好安静观察和独立思考，重要沟通可提前准备表达结构。"],
+      agreeableness: ["更重视理解、体谅和合作，容易建立稳定的人际信任。", "更习惯保持独立判断，需验证面对分歧时的协商与反馈方式。"],
+      conscientiousness: ["更重视计划、承诺、规则和完成度，做事通常更有秩序感。", "更需要清晰节点、检查清单和及时反馈来保持持续推进。"],
+      emotionalStability: ["面对压力和变化时更容易保持平稳，并较快恢复工作状态。", "对变化和压力更敏感，需要验证高压情境下的节奏管理与恢复方式。"],
+      openness: ["更愿意探索新方法、新工具和不同观点，容易产生新的连接与想法。", "更偏好熟悉、明确和可预期的方式，可通过具体任务验证学习迁移能力。"]
     };
     const candidateBigFiveAdvice = {
       extraversion: {
@@ -2758,7 +2759,7 @@
     const VERIFICATION_CODES_API = `${API_ORIGIN}/api/verification-codes${HR_ACCESS_KEY ? `?key=${encodeURIComponent(HR_ACCESS_KEY)}` : ""}`;
     const SUBMISSION_CACHE_KEY = `talentHrSubmissionCache:${HR_ACCESS_KEY || "local-admin"}`;
     const DRAFT_STORAGE_KEY = `talentAssessmentDraft:${HR_ACCESS_KEY || "local"}`;
-    const HR_JOB_TABS = ["全部岗位", "招聘", "系统策划", "游戏测试", "执行策划", "AI美术（场景）", "特效"];
+    const HR_JOB_TABS = ["全部岗位", "招聘", "系统策划", "执行策划", "AI美术（场景）", "场景原画", "游戏测试", "服务端开发", "客户端开发"];
     if (candidateMode) document.body.dataset.mode = "candidate";
     if (hrMode) document.body.dataset.mode = "hr";
     const state = { questions: [], index: 0, answers: {}, view: hrMode ? "hr" : "answer", autoTimer: null, submissions: [], candidates: [], verificationCodes: [], activeSubmissionId: "", loadedResult: null, loadedAssessmentVersion: "", loadedQuestionCount: 0, syncReady: false, rosterReady: false, verificationCodesReady: false, currentHr: null, hrUsers: [], jobOwners: {}, selectedJob: "全部岗位", selectedHr: "all", codeSearch: "", codeStatusFilter: "all", codeExpiryHours: 24, selectedCandidateIds: new Set() };
@@ -3177,6 +3178,7 @@
     function renderHrReport({ refresh = true } = {}) {
       const result = currentReportResult();
       const profile = profiles[result.primary];
+      const jobReport = window.LingxiangJobReports.build(result, els.role.value);
       const rankedBigFiveScores = rankedBigFive(result);
       const topBigFive = rankedBigFiveScores[0];
       const lowBigFive = rankedBigFiveScores[rankedBigFiveScores.length - 1];
@@ -3201,7 +3203,7 @@
             <li><span class="hr-highlight">当前得分：${value} / ${result.bigFiveMax[key] || 20}（${level(value, result.bigFiveMax[key] || 20)}）</span></li>
             <li><span class="hr-highlight">高分特征：</span>${bigFiveAdvice[key][0]}</li>
             <li><span class="hr-highlight">低分特征：</span>${bigFiveAdvice[key][1]}</li>
-            <li><span class="hr-highlight">HR岗位匹配：</span>${level(value, result.bigFiveMax[key] || 20) === "高" ? bigFiveAdvice[key][0] : bigFiveAdvice[key][1]}</li>
+            <li><span class="hr-highlight">岗位参考：</span>${window.LingxiangJobReports.dimensionAdvice(jobReport, bigFiveNames[key], result.bigFivePercent[key] || 0)}</li>
           </ul>
         </section>
       `).join("");
@@ -3237,8 +3239,10 @@
             </div>
           </header>
 
-          <div class="hr-candidate-line">人选信息：{${candidateName}、${candidateRole}、${reportDate}、归属 ${reportHrOwner}} · 测评版本 ${escapeHtml(result.assessmentVersion || "v1")} · ${Number(result.questionCount || 0)} 题</div>
-          <div class="hr-main-type">主类型：{${hrTitle}}</div>
+          <div class="hr-report-name">${jobReport.reportTitle}</div>
+
+          <div class="hr-candidate-line">人选信息：${candidateName}、${candidateRole}、${reportDate}、归属 ${reportHrOwner} · 测评版本 ${escapeHtml(result.assessmentVersion || "v1")} · ${Number(result.questionCount || 0)} 题</div>
+          <div class="hr-main-type">主类型：${hrTitle} · 岗位：${jobReport.roleName}</div>
 
           <section class="hr-trait-strip" aria-label="倾向分值">
             ${traitRows.map(([label, value]) => `
@@ -3253,46 +3257,51 @@
             <section class="hr-section">
               <h3>综合画像</h3>
               <p><span class="hr-highlight">主类型：${hrTitle}</span></p>
-              <p><span class="hr-highlight">岗位适配度：${result.fit}%</span></p>
-              <p class="hr-muted-line">${profile.short}</p>
+              <p><span class="hr-highlight">${jobReport.roleName}适配度：${jobReport.fit}%（${jobReport.fitLevel}）</span></p>
+              <p class="hr-muted-line">${jobReport.summary}</p>
             </section>
 
             <section class="hr-section">
-              <h3>风险点与建议</h3>
+              <h3>优势表现</h3>
               <ol class="hr-simple-list">
-                ${profile.risks.map(item => `<li>${item}</li>`).join("")}
-                <li>${profile.develop[0]}</li>
-                <li>${bigFiveAdvice[lowBigFive[0]][1]}</li>
+                ${jobReport.advantages.map(item => `<li>${item}</li>`).join("")}
               </ol>
             </section>
 
             <section class="hr-section">
-              <h3>大五人格得分</h3>
+              <h3>岗位能力得分</h3>
               <div class="hr-bigfive-lines">
-                ${Object.entries(result.bigFive).map(([key, value]) => `
-                  <div><span class="hr-highlight">${bigFiveNames[key]}：${value}</span></div>
+                ${jobReport.abilities.map(ability => `
+                  <div><span class="hr-highlight">${ability.label}：${ability.score}%</span><span class="hr-muted-line"> 权重 ${ability.weight}%</span></div>
                 `).join("")}
               </div>
             </section>
 
             <section class="hr-section">
-              <h3>面试验证重点</h3>
+              <h3>风险点与建议</h3>
               <ol class="hr-simple-list">
-                ${profile.interview.map(item => `<li>${item}</li>`).join("")}
+                ${jobReport.risks.map(item => `<li>${item}</li>`).join("")}
               </ol>
             </section>
           </div>
 
           <section class="hr-detail-section">
-            <h3 class="hr-detail-title">${hrTitle}</h3>
+            <h3 class="hr-detail-title">主类型解读：${hrTitle}</h3>
             <ul class="hr-detail-list">
               <li><span class="hr-highlight">代表人物：</span>${spiritRepresentatives[result.primary] || spiritRepresentatives.chameleon}</li>
-              <li><span class="hr-highlight">个性特点：</span>${profile.short}${profile.strengths[0]}</li>
-              <li><span class="hr-highlight">优点：</span>${profile.strengths[1]}</li>
-              <li><span class="hr-highlight">不足：</span>${profile.risks[0]}</li>
-              <li><span class="hr-highlight">HR岗位匹配：</span>${profile.fit.join("、")}</li>
-              <li><span class="hr-highlight">管理建议：</span>${profile.develop[0]}</li>
+              <li><span class="hr-highlight">个性特点：</span>${profile.short}</li>
+              <li><span class="hr-highlight">岗位应用：</span>该主类型需结合上方岗位能力得分和实际项目经历综合判断。</li>
             </ul>
+          </section>
+
+          <section class="hr-detail-section">
+            <h3>面试验证重点</h3>
+            <ol class="hr-simple-list">${jobReport.interviews.map(item => `<li>${item}</li>`).join("")}</ol>
+          </section>
+
+          <section class="hr-detail-section">
+            <h3>管理建议 / 培养建议</h3>
+            <p class="hr-muted-line">${jobReport.management}</p>
           </section>
 
           ${bigFiveDetail}
@@ -3315,7 +3324,7 @@
         button.addEventListener("click", () => {
           const action = button.dataset.hrAction;
           if (action === "xls") {
-            downloadHrCsv(result, profile, hrTitle, topBigFive, lowBigFive);
+            downloadHrCsv(result, jobReport, hrTitle, topBigFive, lowBigFive);
             return;
           }
           window.print();
@@ -3932,6 +3941,7 @@
         ...exportSubmissions.map(item => {
           const info = item.info || {};
           const result = item.result || {};
+          const jobReport = window.LingxiangJobReports.build(result, info.role);
           return [
             info.name || "",
             item.hrOwner || "",
@@ -3943,7 +3953,7 @@
             item.answerCount || Object.keys(item.answers || {}).length,
             item.questionCount || result.questionCount || item.answerCount || Object.keys(item.answers || {}).length,
             result.primary || "",
-            result.fit ? `${result.fit}%` : "",
+            `${jobReport.fit}%`,
             info.open || ""
           ];
         })
@@ -3959,18 +3969,21 @@
       URL.revokeObjectURL(url);
     }
 
-    function downloadHrCsv(result, profile, hrTitle, topBigFive, lowBigFive) {
+    function downloadHrCsv(result, jobReport, hrTitle, topBigFive, lowBigFive) {
       const rows = [
         ["字段", "内容"],
+        ["报告名称", jobReport.reportTitle],
         ["候选人", els.name.value || "-"],
         ["归属 HR", state.submissions.find(item => item.id === state.activeSubmissionId)?.hrOwner || "-"],
         ["测评岗位", els.role.value || "-"],
+        ["匹配岗位画像", jobReport.roleName],
         ["工作年限", els.years.value || "-"],
         ["报告日期", els.date.value || "-"],
         ["测评版本", result.assessmentVersion || "v1"],
         ["题目数量", result.questionCount || state.loadedQuestionCount || state.questions.length],
         ["主类型", hrTitle],
-        ["岗位适配度", `${result.fit}%`],
+        ["岗位适配度", `${jobReport.fit}%`],
+        ["适配度等级", jobReport.fitLevel],
         ["老虎", result.traits.tiger],
         ["孔雀", result.traits.peacock],
         ["考拉", result.traits.koala],
@@ -3983,9 +3996,12 @@
         ["开放性", `${result.bigFive.openness}/${result.bigFiveMax.openness || 20}（${result.bigFivePercent.openness}%）`],
         ["最高维度", `${bigFiveNames[topBigFive[0]]}（${level(topBigFive[1], result.bigFiveMax[topBigFive[0]] || 20)}）`],
         ["需验证维度", `${bigFiveNames[lowBigFive[0]]}（${level(lowBigFive[1], result.bigFiveMax[lowBigFive[0]] || 20)}）`],
-        ["HR岗位匹配", profile.fit.join("、")],
-        ["风险点", profile.risks.join("；")],
-        ["面试验证重点", profile.interview.join("；")],
+        ...jobReport.abilities.map(item => [`岗位能力-${item.label}`, `${item.score}%（权重 ${item.weight}%）`]),
+        ["综合画像", jobReport.summary],
+        ["优势表现", jobReport.advantages.join("；")],
+        ["风险点与建议", jobReport.risks.join("；")],
+        ["面试验证重点", jobReport.interviews.join("；")],
+        ["管理建议/培养建议", jobReport.management],
         ["开放题记录", els.open.value || "未填写"]
       ];
       const csv = "\ufeff" + rows.map(row => row.map(csvCell).join(",")).join("\n");
